@@ -204,6 +204,16 @@ function App() {
               <span>Docs</span>
             </button>
             
+            <a 
+              href="/admin.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 hover:text-white transition-all flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+            >
+              <span>⚡</span>
+              <span>Admin Panel</span>
+            </a>
+            
             {token ? (
               <div className="flex items-center space-x-3">
                 <button

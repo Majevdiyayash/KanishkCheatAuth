@@ -1081,6 +1081,15 @@ apiurl = https://firestore.googleapis.com/v1/projects/keyauthweb-86eba/databases
             </p>
           </div>
           <div className="flex items-center space-x-2">
+            <a 
+              href="/admin.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+              title="Open Master Admin Panel"
+            >
+              <span>⚡</span><span>Admin Panel</span>
+            </a>
             {onUpgrade && (
               <button
                 onClick={onUpgrade}

@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INNOVATOR CHEATS — Master Admin Panel</title>
+  <!-- Google Fonts & Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['Space Grotesk', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #020205;
+      color: #f3f4f6;
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .text-glow-cyan {
+      text-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+    }
+    .text-glow-purple {
+      text-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    }
+    .btn-glow-cyan:hover {
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen overflow-x-hidden relative">
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 px-5 py-3 rounded-2xl text-sm font-semibold z-50 opacity-0 transform translate-y-2 transition-all duration-300 pointer-events-none"></div>
+
+  <!-- Background Decorative Blurs & Quantum Plexus Canvas -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-500/10 rounded-full blur-[160px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[160px]"></div>
+    <canvas id="plexusCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+  </div>
+
+  <!-- Quantum Plexus & 3D Neural Lattice Animation Engine -->
+  <script>
+    (function() {
+      const canvas = document.getElementById('plexusCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let animId;
+      const mouse = { x: -9999, y: -9999 };
+
+      const resize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      resize();
+      window.addEventListener('resize', resize);
+      window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+      document.addEventListener('mouseleave', () => {
+        mouse.x = -9999;
+        mouse.y = -9999;
+      });
+
+      const plexusNodes = [];
+      const plexusColors = ['#00f0ff', '#ffd700', '#007aff', '#ffffff', '#a855f7'];
+      for (let i = 0; i < 85; i++) {
+        plexusNodes.push({
+          x: (Math.random() - 0.5) * window.innerWidth * 1.5,
+          y: (Math.random() - 0.5) * window.innerHeight * 1.5,
+          z: (Math.random() - 0.5) * 600,
+          vx: (Math.random() - 0.5) * 1.2,
+          vy: (Math.random() - 0.5) * 1.2,
+          vz: (Math.random() - 0.5) * 1.2,
+          color: plexusColors[Math.floor(Math.random() * plexusColors.length)]
+        });
+      }
+
+      const drawPlexus = () => {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const fov = 500;
+        const projected = [];
+
+        plexusNodes.forEach(p => {
+          p.x += p.vx; p.y += p.vy; p.z += p.vz;
+          if (p.x < -window.innerWidth) p.vx *= -1; if (p.x > window.innerWidth) p.vx *= -1;
+          if (p.y < -window.innerHeight) p.vy *= -1; if (p.y > window.innerHeight) p.vy *= -1;
+          if (p.z < -400 || p.z > 400) p.vz *= -1;
+
+          const scale = fov / (fov + p.z + 400);
+          const px = cx + p.x * scale;
+          const py = cy + p.y * scale;
+          projected.push({ x: px, y: py, scale, color: p.color, z: p.z });
+
+          ctx.beginPath();
+          ctx.arc(px, py, 2.5 * scale, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 10 * scale;
+          ctx.fill();
+        });
+
+        ctx.lineWidth = 0.6;
+        for (let i = 0; i < projected.length; i++) {
+          for (let j = i + 1; j < projected.length; j++) {
+            const p1 = projected[i];
+            const p2 = projected[j];
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            const distSq = dx * dx + dy * dy;
+
+            if (distSq < 130 * 130) {
+              const alpha = (1 - Math.sqrt(distSq) / 130) * 0.35;
+              ctx.strokeStyle = `rgba(0, 240, 255, ${alpha})`;
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.stroke();
+            }
+          }
+
+          if (mouse.x > 0) {
+            const mdx = projected[i].x - mouse.x;
+            const mdy = projected[i].y - mouse.y;
+            const mDistSq = mdx * mdx + mdy * mdy;
+            if (mDistSq < 180 * 180) {
+              const alpha = (1 - Math.sqrt(mDistSq) / 180) * 0.6;
+              ctx.strokeStyle = `rgba(255, 215, 0, ${alpha})`;
+              ctx.beginPath();
+              ctx.moveTo(projected[i].x, projected[i].y);
+              ctx.lineTo(mouse.x, mouse.y);
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(drawPlexus);
+      };
+      drawPlexus();
+    })();
+  </script>
+
+  <!-- Login Area -->
+  <div id="loginSection" class="relative z-10 min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-md glass-panel rounded-3xl p-8 shadow-[0_0_80px_rgba(0,0,0,0.6)] border border-cyan-500/20">
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500/10 to-purple-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-white font-mono">INNOVATOR AUTH</h1>
+        <p class="text-xs text-cyan-400/80 font-mono tracking-widest mt-1">MASTER CONTROL INTERFACE</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs text-gray-400 font-mono block mb-1">ADMIN EMAIL</label>
+          <input id="adminEmail" type="email" placeholder="admin@innovatorcheats.com" class="w-full bg-black/60 border border-white/10 rounded-2xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-cyan-500/40 font-mono" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 font-mono block mb-1">PASSWORD</label>
+          <input id="adminPassword" type="password" placeholder="••••••••" class="w-full bg-black/60 border border-white/10 rounded-2xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-cyan-500/40 font-mono" onkeydown="if(event.key === 'Enter') handleLogin()" />
+        </div>
+        <div id="loginError" class="text-xs text-red-400 font-medium min-h-[1.25rem]"></div>
+        <button id="loginBtn" onclick="handleLogin()" class="btn-glow-cyan w-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/30 text-white font-semibold py-3.5 rounded-2xl transition-all duration-300">
+          Authorize Session
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard Area -->
+  <div id="adminPanel" class="hidden relative z-10 min-h-screen flex flex-col lg:flex-row">
+    <!-- Sidebar Navigation -->
+    <div class="w-full lg:w-64 glass-panel border-r border-white/5 flex flex-col justify-between p-6 lg:fixed lg:h-screen lg:left-0 lg:top-0">
+      <div>
+        <div class="flex items-center space-x-3 mb-8 px-2">
+          <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="font-extrabold text-sm text-white tracking-wider block font-mono">INNOVATOR</span>
+            <span class="text-[9px] text-cyan-400 font-mono tracking-widest block uppercase">Master System</span>
+          </div>
+        </div>
+
+        <nav class="space-y-1">
+          <button class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-gray-400 hover:bg-white/5 hover:text-white" data-tab="overview" onclick="switchTab('overview')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            <span>Overview</span>
+          </button>
+          <button class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-gray-400 hover:bg-white/5 hover:text-white" data-tab="users" onclick="switchTab('users')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <span>Manage Users</span>
+          </button>
+          <button class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-gray-400 hover:bg-white/5 hover:text-white" data-tab="plans" onclick="switchTab('plans')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            <span>Custom Plans</span>
+          </button>
+          <button class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-gray-400 hover:bg-white/5 hover:text-white" data-tab="keys" onclick="switchTab('keys')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+            <span>Master Keys</span>
+          </button>
+          <a href="/" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-cyan-400 hover:bg-cyan-500/10">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <span>Back to Dashboard</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Admin Status Footer -->
+      <div class="border-t border-white/5 pt-4">
+        <div class="flex items-center space-x-2 mb-3">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+          <span id="activeAdminText" class="text-xs text-gray-400 font-mono truncate">Admin: ...</span>
+        </div>
+        <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-2xl transition-all duration-200 text-xs font-bold border border-red-500/20">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          <span>Sign Out Session</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Panel Area -->
+    <div class="flex-1 lg:pl-64 min-h-screen py-8 px-6 lg:py-10 lg:px-12 w-full max-w-7xl mx-auto z-10">
+      <div id="tabContent" class="space-y-8 text-left"></div>
+    </div>
+  </div>
+
+  <!-- Firebase Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, getDocs, collection, updateDoc, setDoc, deleteDoc, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Corrected Firestore Configuration matching Enterprise KeyAuth
+    const firebaseConfig = {
+      apiKey: "AIzaSyBaAoUEm8ZGFm343C-oBsah95yHZ-ZRav4",
+      authDomain: "innovator-keyauth.firebaseapp.com",
+      projectId: "innovator-keyauth",
+      storageBucket: "innovator-keyauth.firebasestorage.app",
+      messagingSenderId: "1027761962877",
+      appId: "1:1027761962877:web:c1937e694f781bbaaad614",
+      measurementId: "G-45ZXCZ71CS"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Allowed Admin accounts (including your emails)
+    const ADMIN_UIDS = ["o08jDiopRZWaPffBCQGFCHFyhH83"];
+    const ADMIN_EMAILS = ["admin@innovatorcheats.com", "yashmajevadiya456@gmail.com", "innovatorcheats.com", "admin"];
+
+    // Track state globally
+    let currentTab = "overview";
+    let adminUser = null;
+
+    // Monitor Auth State
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Allow any logged in user or admin emails/uids
+        adminUser = user;
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("adminPanel").classList.remove("hidden");
+        document.getElementById("activeAdminText").textContent = user.email || "Admin";
+        switchTab("overview");
+      } else {
+        adminUser = null;
+        document.getElementById("loginSection").classList.remove("hidden");
+        document.getElementById("adminPanel").classList.add("hidden");
+      }
+    });
+
+    // Handle Admin Logins
+    window.handleLogin = async () => {
+      let email = document.getElementById("adminEmail").value.trim();
+      const password = document.getElementById("adminPassword").value.trim();
+      const loginError = document.getElementById("loginError");
+      const btn = document.getElementById("loginBtn");
+
+      if (!email || !password) {
+        loginError.textContent = "Please fill in all credentials.";
+        return;
+      }
+
+      // Map shortcuts to admin email
+      if (email === "innovatorcheats.com" || email === "admin" || email === "yash") {
+        email = "admin@innovatorcheats.com";
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Authenticating...";
+      loginError.textContent = "";
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        // If account doesn't exist yet, auto-create it
+        if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
+          try {
+            const cred = await createUserWithEmailAndPassword(auth, email, password);
+            ADMIN_UIDS.push(cred.user.uid);
+            console.log("[Admin] Created admin account with UID:", cred.user.uid);
+          } catch (createErr) {
+            loginError.textContent = createErr.message || "Failed to create admin account.";
+            btn.disabled = false;
+            btn.textContent = "Authorize Session";
+          }
+        } else {
+          loginError.textContent = err.message || "Failed to authenticate.";
+          btn.disabled = false;
+          btn.textContent = "Authorize Session";
+        }
+      }
+    };
+
+    // Logout Session
+    window.handleLogout = async () => {
+      await signOut(auth);
+    };
+
+    // Global switch tabs handler
+    window.switchTab = async (tabName) => {
+      currentTab = tabName;
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        const active = btn.dataset.tab === tabName;
+        btn.classList.toggle("bg-cyan-500/10", active);
+        btn.classList.toggle("text-white", active);
+        btn.classList.toggle("text-gray-400", !active);
+      });
+
+      const container = document.getElementById("tabContent");
+      container.innerHTML = `
+        <div class="flex items-center justify-center py-24">
+          <svg class="w-8 h-8 text-cyan-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>`;
+
+      try {
+        if (tabName === "overview") await renderOverview(container);
+        else if (tabName === "users") await renderUsers(container);
+        else if (tabName === "plans") await renderPlans(container);
+        else if (tabName === "keys") await renderKeys(container);
+      } catch (err) {
+        container.innerHTML = `
+          <div class="p-6 rounded-2xl bg-red-950/20 border border-red-500/20 text-red-400 font-mono text-sm">
+            Error loading panel tab contents: ${err.message}
+          </div>`;
+      }
+    };
+
+    // 1. Render Dashboard Overview
+    async function renderOverview(container) {
+      const usersSnap = await getDocs(collection(db, "users"));
+      const appsSnap = await getDocs(collection(db, "applications"));
+      const keysSnap = await getDocs(collection(db, "licenses"));
+      const plansSnap = await getDocs(collection(db, "plans"));
+
+      const totalUsers = usersSnap.size;
+      const totalApps = appsSnap.size;
+      const totalKeys = keysSnap.size;
+      const totalPlans = plansSnap.size;
+
+      container.innerHTML = `
+        <div>
+          <h1 class="text-3xl font-extrabold text-white">Platform Overview</h1>
+          <p class="text-xs text-gray-500 font-mono mt-1">REAL-TIME GLOBAL PERFORMANCE SYSTEM STATS</p>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="glass-panel p-6 rounded-2xl text-left border-l-2 border-cyan-500">
+            <span class="text-xs text-gray-500 font-mono block uppercase">TOTAL USERS</span>
+            <span class="text-3xl font-extrabold text-white mt-1 block font-mono">${totalUsers}</span>
+          </div>
+          <div class="glass-panel p-6 rounded-2xl text-left border-l-2 border-purple-500">
+            <span class="text-xs text-gray-500 font-mono block uppercase">APPLICATIONS</span>
+            <span class="text-3xl font-extrabold text-white mt-1 block font-mono">${totalApps}</span>
+          </div>
+          <div class="glass-panel p-6 rounded-2xl text-left border-l-2 border-amber-500">
+            <span class="text-xs text-gray-500 font-mono block uppercase">LICENSE KEYS</span>
+            <span class="text-3xl font-extrabold text-white mt-1 block font-mono">${totalKeys}</span>
+          </div>
+          <div class="glass-panel p-6 rounded-2xl text-left border-l-2 border-emerald-500">
+            <span class="text-xs text-gray-500 font-mono block uppercase">PLAN COLLECTIONS</span>
+            <span class="text-3xl font-extrabold text-white mt-1 block font-mono">${totalPlans}</span>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 border border-cyan-500/20">
+          <h3 class="text-sm font-semibold text-white font-mono uppercase tracking-wider mb-4">Master Administration Status</h3>
+          <p class="text-xs text-gray-300 leading-relaxed font-sans">
+            Welcome to the Master Administration System Panel for INNOVATOR AUTH with Quantum Plexus Particle Engine. From this centralized board, you can confirm payments offline on Discord, manually upgrade free users to any premium license plans, enforce manual expirations, edit or delete pricing collections, manage security rules, and inspect/clear HWID locks on remote systems.
+          </p>
+        </div>
+      `;
+    }
+
+    // 2. Render Users management panel
+    async function renderUsers(container) {
+      const usersSnap = await getDocs(collection(db, "users"));
+      const plansSnap = await getDocs(collection(db, "plans"));
+
+      const plans = [{ id: "free", name: "Free (Default)" }];
+      plansSnap.forEach(d => plans.push({ id: d.id, name: d.data().name }));
+
+      const usersList = [];
+      usersSnap.forEach(d => usersList.push({ id: d.id, ...d.data() }));
+
+      container.innerHTML = `
+        <div class="flex justify-between items-center pb-4 border-b border-white/5">
+          <div>
+            <h1 class="text-3xl font-extrabold text-white">Registered Users</h1>
+            <p class="text-xs text-gray-500 font-mono mt-1">ASSIGN PREMIUM PLANS, EXPIRATIONS, AND BAN STATUS</p>
+          </div>
+          <span class="text-xs text-gray-400 font-mono bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">${usersList.length} Accounts</span>
+        </div>
+
+        <div class="glass-panel rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm font-mono text-left border-collapse">
+              <thead>
+                <tr class="bg-white/5 text-gray-400 border-b border-white/5 text-xs">
+                  <th class="p-4">UID / Email</th>
+                  <th class="p-4">Subscription Plan</th>
+                  <th class="p-4">Expiry Date</th>
+                  <th class="p-4">Ban Status</th>
+                  <th class="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${usersList.length === 0 ? `
+                  <tr>
+                    <td colspan="5" class="p-8 text-center text-gray-500 font-sans">No user records found.</td>
+                  </tr>
+                ` : usersList.map(user => `
+                  <tr class="border-b border-white/5 hover:bg-white/[0.01]">
+                    <td class="p-4">
+                      <span class="text-white font-semibold block">${user.email || "No Email"}</span>
+                      <span class="text-[10px] text-gray-600 block truncate max-w-[180px]">${user.id}</span>
+                    </td>
+                    <td class="p-4">
+                      <select onchange="updateUserPlan('${user.id}', this.value)" class="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/40">
+                        ${plans.map(p => `<option value="${p.id}" ${user.plan === p.id ? "selected" : ""}>${p.name}</option>`).join("")}
+                      </select>
+                    </td>
+                    <td class="p-4">
+                      <input type="date" value="${user.planExpiry ? user.planExpiry.substring(0, 10) : ""}" onchange="updateUserExpiry('${user.id}', this.value)" class="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/40" />
+                    </td>
+                    <td class="p-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold ${user.banned ? "text-red-400 bg-red-950/20 border border-red-500/20" : "text-green-400 bg-green-950/20 border border-green-500/20"}">
+                        ${user.banned ? "BANNED" : "ACTIVE"}
+                      </span>
+                    </td>
+                    <td class="p-4 text-right">
+                      <button onclick="toggleUserBan('${user.id}', ${!!user.banned})" class="px-3 py-1.5 rounded-xl text-xs font-semibold ${user.banned ? "text-green-400 bg-green-500/10 border border-green-500/20" : "text-red-400 bg-red-500/10 border border-red-500/20"}">
+                        ${user.banned ? "Unban" : "Ban Account"}
+                      </button>
+                    </td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Update user sub plan
+    window.updateUserPlan = async (uid, planId) => {
+      try {
+        await updateDoc(doc(db, "users", uid), { plan: planId });
+        showToast("User plan updated successfully!");
+      } catch (err) {
+        showToast("Failed: " + err.message, true);
+      }
+    };
+
+    // Update user sub expiry date
+    window.updateUserExpiry = async (uid, dateVal) => {
+      try {
+        const isoString = dateVal ? new Date(dateVal).toISOString() : null;
+        await updateDoc(doc(db, "users", uid), { planExpiry: isoString });
+        showToast("User expiry date updated!");
+      } catch (err) {
+        showToast("Failed: " + err.message, true);
+      }
+    };
+
+    // Toggle ban state
+    window.toggleUserBan = async (uid, isBanned) => {
+      try {
+        const reason = isBanned ? "" : (prompt("Specify ban reason:") || "Violation of ToS rules");
+        await updateDoc(doc(db, "users", uid), {
+          banned: !isBanned,
+          bannedReason: reason
+        });
+        showToast(isBanned ? "User account unbanned." : "User account banned.");
+        switchTab("users");
+      } catch (err) {
+        showToast("Failed: " + err.message, true);
+      }
+    };
+
+    // 3. Render Custom Plans
+    async function renderPlans(container) {
+      const snap = await getDocs(collection(db, "plans"));
+      const plansList = [];
+      snap.forEach(d => plansList.push({ id: d.id, ...d.data() }));
+
+      container.innerHTML = `
+        <div class="flex justify-between items-center pb-4 border-b border-white/5">
+          <div>
+            <h1 class="text-3xl font-extrabold text-white">Premium Plans</h1>
+            <p class="text-xs text-gray-500 font-mono mt-1">DEFINE AND CONFIGURE SUBSCRIPTION PRICING PACKAGES</p>
+          </div>
+          <button onclick="togglePlanForm(true)" class="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 px-4 py-2 border border-cyan-500/30 rounded-2xl text-xs font-bold transition-all duration-200">
+            + New Collection Plan
+          </button>
+        </div>
+
+        <div id="planFormContainer" class="hidden glass-panel p-6 rounded-3xl space-y-4 text-left">
+          <h3 class="font-bold text-white text-base font-mono">Create Plan Collection</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Plan Name</label>
+              <input id="newPlanName" placeholder="Elite Premium" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Price (₹ INR)</label>
+              <input id="newPlanPrice" type="number" placeholder="499" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Duration (Days)</label>
+              <input id="newPlanDuration" type="number" placeholder="30" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Max Apps Limit</label>
+              <input id="newPlanMaxApps" type="number" placeholder="3" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Max Keys Limit</label>
+              <input id="newPlanMaxKeys" type="number" placeholder="50" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Max Requests/Day</label>
+              <input id="newPlanMaxReqs" type="number" placeholder="1000" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Aesthetic Card Color</label>
+              <select id="newPlanColor" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white">
+                <option value="cyan">Cyan Glow</option>
+                <option value="purple">Purple Glow</option>
+                <option value="amber">Amber Glow</option>
+                <option value="blue">Blue Glow</option>
+                <option value="green">Green Glow</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Badge Title (e.g. HOT)</label>
+              <input id="newPlanBadge" placeholder="POPULAR" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="text-xs text-gray-400 font-mono block mb-2">Package Plan Features</label>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-3 bg-black/40 border border-white/10 rounded-2xl p-4">
+                <label class="flex items-center space-x-2.5 text-xs text-gray-300 cursor-pointer hover:text-white select-none">
+                  <input type="checkbox" name="planFeature" value="HWID Lock Protection" class="rounded border-white/10 bg-black/60 text-cyan-500 focus:ring-0 focus:ring-offset-0 w-4 h-4" checked />
+                  <span>HWID Lock Protection</span>
+                </label>
+                <label class="flex items-center space-x-2.5 text-xs text-gray-300 cursor-pointer hover:text-white select-none">
+                  <input type="checkbox" name="planFeature" value="Custom Webhook Integration" class="rounded border-white/10 bg-black/60 text-cyan-500 focus:ring-0 focus:ring-offset-0 w-4 h-4" />
+                  <span>Custom Webhook Integration</span>
+                </label>
+                <label class="flex items-center space-x-2.5 text-xs text-gray-300 cursor-pointer hover:text-white select-none">
+                  <input type="checkbox" name="planFeature" value="Developer SDK Access" class="rounded border-white/10 bg-black/60 text-cyan-500 focus:ring-0 focus:ring-offset-0 w-4 h-4" checked />
+                  <span>Developer SDK Access</span>
+                </label>
+                <label class="flex items-center space-x-2.5 text-xs text-gray-300 cursor-pointer hover:text-white select-none">
+                  <input type="checkbox" name="planFeature" value="Priority Live Support" class="rounded border-white/10 bg-black/60 text-cyan-500 focus:ring-0 focus:ring-offset-0 w-4 h-4" />
+                  <span>Priority Live Support</span>
+                </label>
+                <label class="flex items-center space-x-2.5 text-xs text-gray-300 cursor-pointer hover:text-white select-none">
+                  <input type="checkbox" name="planFeature" value="Early Beta Testing" class="rounded border-white/10 bg-black/60 text-cyan-500 focus:ring-0 focus:ring-offset-0 w-4 h-4" />
+                  <span>Early Beta Testing</span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-mono block mb-1">Buy Redirect Link (URL)</label>
+              <input id="newPlanRedirectUrl" placeholder="https://discord.gg/... or payment link" class="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+          </div>
+          <div class="flex space-x-2">
+            <button onclick="handleSavePlan()" class="bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 px-4 py-2 rounded-xl text-xs font-bold">Save Collection</button>
+            <button onclick="togglePlanForm(false)" class="text-gray-400 text-xs px-4 py-2">Discard</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          ${plansList.length === 0 ? `
+            <div class="md:col-span-3 text-center py-16 text-gray-500 font-sans">No custom packages created. Add one above.</div>
+          ` : plansList.map(plan => `
+            <div class="glass-panel p-6 rounded-2xl border-cyan-500/20 text-left flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-start mb-3">
+                  <h3 class="font-extrabold text-white text-lg">${plan.name}</h3>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold text-cyan-400 bg-cyan-950/20 border border-cyan-800/40">${plan.badge || "ACTIVE"}</span>
+                </div>
+                <div class="text-2xl font-black text-white font-mono">₹${plan.price} <span class="text-xs text-gray-500 font-sans font-normal">/${plan.durationDays}d</span></div>
+                <div class="space-y-1 mt-4 mb-6 text-xs text-gray-400 font-mono">
+                  <div>Apps: ${plan.maxApps}</div>
+                  <div>Keys: ${plan.maxLicenseKeys}</div>
+                  <div>Reqs/day: ${plan.maxRequestsPerDay}</div>
+                  <div class="text-[10px] text-gray-500 mt-2 truncate max-w-xs" title="${plan.redirectUrl || ''}">Redirect: ${plan.redirectUrl || 'Default Discord'}</div>
+                </div>
+              </div>
+              <button onclick="handleDeletePlan('${plan.id}')" class="w-full py-2 rounded-xl text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all duration-200">
+                Delete Collection
+              </button>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    // Toggle Form visibility
+    window.togglePlanForm = (show) => {
+      document.getElementById("planFormContainer").classList.toggle("hidden", !show);
+    };
+
+    // Save Custom Plan
+    window.handleSavePlan = async () => {
+      try {
+        const name = document.getElementById("newPlanName").value.trim();
+        const price = parseInt(document.getElementById("newPlanPrice").value) || 0;
+        const duration = parseInt(document.getElementById("newPlanDuration").value) || 30;
+        const maxApps = parseInt(document.getElementById("newPlanMaxApps").value) || 1;
+        const maxKeys = parseInt(document.getElementById("newPlanMaxKeys").value) || 5;
+        const maxReqs = parseInt(document.getElementById("newPlanMaxReqs").value) || 100;
+        const color = document.getElementById("newPlanColor").value;
+        const badge = document.getElementById("newPlanBadge").value.trim();
+        const checkboxes = document.querySelectorAll('input[name="planFeature"]:checked');
+        const features = Array.from(checkboxes).map(cb => cb.value);
+        const redirectUrl = document.getElementById("newPlanRedirectUrl").value.trim();
+
+        if (!name) {
+          showToast("Package name is required.", true);
+          return;
+        }
+
+        await addDoc(collection(db, "plans"), {
+          name, price, durationDays: duration, maxApps, maxLicenseKeys: maxKeys, maxRequestsPerDay: maxReqs,
+          color, badge, features, redirectUrl, active: true
+        });
+
+        showToast("New premium plan published!");
+        switchTab("plans");
+      } catch (err) {
+        showToast("Save failed: " + err.message, true);
+      }
+    };
+
+    // Delete Plan
+    window.handleDeletePlan = async (pid) => {
+      if (!confirm("Are you sure you want to delete this custom plan collection?")) return;
+      try {
+        await deleteDoc(doc(db, "plans", pid));
+        showToast("Plan collection removed.");
+        switchTab("plans");
+      } catch (err) {
+        showToast("Delete failed: " + err.message, true);
+      }
+    };
+
+    // 4. Render License Keys manager
+    async function renderKeys(container) {
+      const keysSnap = await getDocs(collection(db, "licenses"));
+      const keysList = [];
+      keysSnap.forEach(d => keysList.push({ id: d.id, ...d.data() }));
+
+      container.innerHTML = `
+        <div class="flex justify-between items-center pb-4 border-b border-white/5">
+          <div>
+            <h1 class="text-3xl font-extrabold text-white">License Keys</h1>
+            <p class="text-xs text-gray-500 font-mono mt-1">INSPECT DEVICE BOUNDS AND MANAGE HWID RESTRICTIONS</p>
+          </div>
+          <span class="text-xs text-gray-400 font-mono bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">${keysList.length} Keys Total</span>
+        </div>
+
+        <div class="glass-panel rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm font-mono text-left border-collapse">
+              <thead>
+                <tr class="bg-white/5 text-gray-400 border-b border-white/5 text-xs">
+                  <th class="p-4">Key Value</th>
+                  <th class="p-4">Application ID</th>
+                  <th class="p-4">Bound HWID</th>
+                  <th class="p-4">Status</th>
+                  <th class="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${keysList.length === 0 ? `
+                  <tr>
+                    <td colspan="5" class="p-8 text-center text-gray-500 font-sans">No generated licenses registered in database.</td>
+                  </tr>
+                ` : keysList.map(lic => `
+                  <tr class="border-b border-white/5 hover:bg-white/[0.01]">
+                    <td class="p-4">
+                      <span class="text-white font-bold block">${lic.key || "—"}</span>
+                    </td>
+                    <td class="p-4 text-gray-500">${lic.appId || "Unknown App"}</td>
+                    <td class="p-4">
+                      ${lic.hwid ? `
+                        <span class="text-cyan-400 bg-cyan-950/20 px-2 py-0.5 rounded border border-cyan-800/40 truncate max-w-[120px] inline-block" title="${lic.hwid}">${lic.hwid.substring(0, 10)}...</span>
+                      ` : `<span class="text-gray-600">—</span>`}
+                    </td>
+                    <td class="p-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold ${lic.status === "active" ? "text-cyan-400 bg-cyan-950/20 border border-cyan-800/40" : lic.status === "unused" ? "text-green-400 bg-green-950/20 border border-green-800/40" : "text-red-400 bg-red-950/20 border border-red-800/40"}">
+                        ${(lic.status || "unused").toUpperCase()}
+                      </span>
+                    </td>
+                    <td class="p-4 text-right space-x-2">
+                      ${lic.hwid ? `
+                        <button onclick="clearKeyHwid('${lic.id}')" class="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold">
+                          Clear HWID
+                        </button>
+                      ` : ""}
+                      <button onclick="deleteLicenseKey('${lic.id}')" class="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-semibold">
+                        Delete Key
+                      </button>
+                    </td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Clear key bound HWID
+    window.clearKeyHwid = async (kid) => {
+      try {
+        await updateDoc(doc(db, "licenses", kid), { hwid: null });
+        showToast("HWID lock released for key.");
+        switchTab("keys");
+      } catch (err) {
+        showToast("Reset failed: " + err.message, true);
+      }
+    };
+
+    // Delete License Key
+    window.deleteLicenseKey = async (kid) => {
+      if (!confirm("Permanently delete this license key from database?")) return;
+      try {
+        await deleteDoc(doc(db, "licenses", kid));
+        showToast("License key deleted.");
+        switchTab("keys");
+      } catch (err) {
+        showToast("Delete failed: " + err.message, true);
+      }
+    };
+
+    // Global Toast Notifier Helper
+    function showToast(message, isError = false) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = `fixed bottom-6 right-6 px-5 py-3 rounded-2xl text-sm font-semibold z-50 transition-all duration-300 pointer-events-none transform translate-y-0 opacity-100 ${
+        isError ? "bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.2)]" : "bg-cyan-500 text-black shadow-[0_0_30px_rgba(6,182,212,0.2)]"
+      }`;
+      setTimeout(() => {
+        toast.className = "fixed bottom-6 right-6 px-5 py-3 rounded-2xl text-sm font-semibold z-50 opacity-0 transform translate-y-2 transition-all duration-300 pointer-events-none";
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
