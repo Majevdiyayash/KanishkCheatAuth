@@ -1,0 +1,20 @@
+[
+  {
+    "id": "usr_seed",
+    "email": "creator@inovaaters.com",
+    "passwordHash": "$2b$10$RDegcNol/Q9MfUk0lkeHO.AvkECEn/0HbKNUCvQQfcaTydD/.rE9y",
+    "createdAt": "2026-07-03T09:43:14.234Z"
+  },
+  {
+    "id": "usr_c7c4b9b7",
+    "email": "phonkastral6@gmail.com",
+    "passwordHash": "$2b$10$pjYVqRWhYi4tXf59UaaBn.svQqWBjAlPhvEGKJqMvl/kTo0szdGui",
+    "createdAt": "2026-07-03T09:50:30.561Z"
+  },
+  {
+    "id": "o08jDiopRZWaPffBCQGFCHFyhH83",
+    "email": "phonkastral6@gmail.com",
+    "passwordHash": "firebase_auth_provider",
+    "createdAt": "2026-07-03T10:11:17.042Z"
+  }
+]

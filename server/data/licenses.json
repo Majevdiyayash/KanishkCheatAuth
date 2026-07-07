@@ -1,0 +1,26 @@
+[
+  {
+    "id": "lic_seed",
+    "appId": "app_seed",
+    "licenseKey": "INV-DEMO-KEY-1234",
+    "hwid": "DESKTOP-HWID-B",
+    "expiresAt": "2026-08-02T09:43:14.237Z",
+    "status": "used",
+    "createdAt": "2026-07-03T09:43:14.237Z",
+    "maxResets": 10,
+    "resetCount": 1,
+    "lastResetAt": "2026-07-03T09:44:16.119Z"
+  },
+  {
+    "id": "lic_24957a80-da4f-4c18-bdbd-a9eb0533665d",
+    "appId": "app_69f3d4e8",
+    "licenseKey": "INV-96E9-2DE0-DA92",
+    "hwid": null,
+    "expiresAt": "2026-07-10T10:15:43.432Z",
+    "status": "active",
+    "createdAt": "2026-07-03T10:15:43.432Z",
+    "maxResets": 10,
+    "resetCount": 0,
+    "lastResetAt": null
+  }
+]

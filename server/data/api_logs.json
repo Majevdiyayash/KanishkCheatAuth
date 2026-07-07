@@ -1,0 +1,79 @@
+[
+  {
+    "id": "log_b8d94a2d-bb61-470c-9671-9ae549aa1c2a",
+    "appId": "app_seed",
+    "licenseKey": null,
+    "endpoint": "/api/init",
+    "status": 200,
+    "timestamp": "2026-07-03T09:44:16.085Z",
+    "ip": "::1",
+    "hwid": null,
+    "message": "Session initialized successfully"
+  },
+  {
+    "id": "log_9ee80bae-37ce-4ade-9c09-6f4ec52a107e",
+    "appId": "app_seed",
+    "licenseKey": "INV-DEMO-KEY-1234",
+    "endpoint": "/api/license",
+    "status": 200,
+    "timestamp": "2026-07-03T09:44:16.098Z",
+    "ip": "::1",
+    "hwid": "DESKTOP-HWID-A",
+    "message": "License bound to HWID: DESKTOP-HWID-A"
+  },
+  {
+    "id": "log_a8056af1-be23-4ff3-8cb6-cb842aa22764",
+    "appId": "app_seed",
+    "licenseKey": null,
+    "endpoint": "/api/init",
+    "status": 200,
+    "timestamp": "2026-07-03T09:44:16.101Z",
+    "ip": "::1",
+    "hwid": null,
+    "message": "Session initialized successfully"
+  },
+  {
+    "id": "log_d088cff9-7d45-4648-8e4c-c1db1c5f0a2a",
+    "appId": "app_seed",
+    "licenseKey": "INV-DEMO-KEY-1234",
+    "endpoint": "/api/license",
+    "status": 403,
+    "timestamp": "2026-07-03T09:44:16.115Z",
+    "ip": "::1",
+    "hwid": "DESKTOP-HWID-B",
+    "message": "HWID mismatch. Locked to: DESKTOP-HWID-A, Client got: DESKTOP-HWID-B"
+  },
+  {
+    "id": "log_00ea87c6-5aaf-4a17-8013-c8af5425729b",
+    "appId": "app_seed",
+    "licenseKey": "INV-DEMO-KEY-1234",
+    "endpoint": "/api/license",
+    "status": 200,
+    "timestamp": "2026-07-03T09:44:16.124Z",
+    "ip": "::1",
+    "hwid": "DESKTOP-HWID-B",
+    "message": "License bound to HWID: DESKTOP-HWID-B"
+  },
+  {
+    "id": "log_571e1b96-1f4d-47dc-a36b-bac47ee54152",
+    "appId": null,
+    "licenseKey": "INV-DEMO-KEY-1234",
+    "endpoint": "/api/license",
+    "status": 401,
+    "timestamp": "2026-07-03T10:09:18.135Z",
+    "ip": "::1",
+    "hwid": "DESKTOP-HWID-FINGERPRINT",
+    "message": "License check failed: invalid or expired session"
+  },
+  {
+    "id": "log_6e754ede-0277-48e1-a2ed-5f9a7e728fe1",
+    "appId": null,
+    "licenseKey": null,
+    "endpoint": "/api/init",
+    "status": 400,
+    "timestamp": "2026-07-03T10:09:39.935Z",
+    "ip": "::1",
+    "hwid": null,
+    "message": "Initialization failed: missing credentials"
+  }
+]

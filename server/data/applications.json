@@ -1,0 +1,22 @@
+[
+  {
+    "id": "app_seed",
+    "ownerId": "usr_seed",
+    "appName": "EnterpriseShield",
+    "ownerid": "OWNER_DEMO",
+    "secret": "secret_demo_value",
+    "appid": "APP_DEMO",
+    "version": "1.0",
+    "createdAt": "2026-07-03T09:43:14.236Z"
+  },
+  {
+    "id": "app_69f3d4e8",
+    "ownerId": "o08jDiopRZWaPffBCQGFCHFyhH83",
+    "appName": "new test web",
+    "ownerid": "479F6363",
+    "secret": "d252ab83e9c6c59f",
+    "appid": "APP_7E29B5",
+    "version": "1.0",
+    "createdAt": "2026-07-03T10:11:39.819Z"
+  }
+]

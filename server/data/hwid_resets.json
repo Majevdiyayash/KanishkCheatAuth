@@ -1,0 +1,10 @@
+[
+  {
+    "id": "rst_712233df-b698-40f1-970b-fb20e13347d7",
+    "licenseKey": "INV-DEMO-KEY-1234",
+    "oldHwid": "DESKTOP-HWID-A",
+    "newHwid": null,
+    "resetTime": "2026-07-03T09:44:16.120Z",
+    "resetBy": "client_api"
+  }
+]

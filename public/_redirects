@@ -1,0 +1,2 @@
+# SPA routing — all routes serve index.html, Netlify handles it
+/*    /index.html   200
