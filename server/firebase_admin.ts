@@ -7,7 +7,7 @@ import {
 
 // Firebase configuration matching frontend dashboard
 const firebaseConfig = {
-  apiKey: "AIzaSyBaAouEm8ZGfm343C-oBsah95yHZ-ZRav4",
+  apiKey: "AIzaSyBaAoUEm8ZGFm343C-oBsah95yHZ-ZRav4",
   authDomain: "innovator-keyauth.firebaseapp.com",
   projectId: "innovator-keyauth",
   storageBucket: "innovator-keyauth.firebasestorage.app",
