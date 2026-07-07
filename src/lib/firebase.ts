@@ -3,13 +3,13 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBI5RmGtnrqL0InEKoXuLTp6zmDRreZBB8",
-  authDomain: "keyauthweb-86eba.firebaseapp.com",
-  projectId: "keyauthweb-86eba",
-  storageBucket: "keyauthweb-86eba.firebasestorage.app",
-  messagingSenderId: "66839697252",
-  appId: "1:66839697252:web:4410edf2c50b4408684c71",
-  measurementId: "G-BVJMNV0EY5"
+  apiKey: "AIzaSyBaAouEm8ZGfm343C-oBsah95yHZ-ZRav4",
+  authDomain: "innovator-keyauth.firebaseapp.com",
+  projectId: "innovator-keyauth",
+  storageBucket: "innovator-keyauth.firebasestorage.app",
+  messagingSenderId: "1027761962877",
+  appId: "1:1027761962877:web:c1937e694f781bbaaad614",
+  measurementId: "G-45ZXCZ71CS"
 };
 
 // Initialize Firebase
