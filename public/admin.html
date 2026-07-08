@@ -269,7 +269,16 @@
 
     // Allowed Admin accounts (including your emails)
     const ADMIN_UIDS = ["o08jDiopRZWaPffBCQGFCHFyhH83"];
-    const ADMIN_EMAILS = ["admin@innovatorcheats.com", "yashmajevadiya456@gmail.com", "innovatorcheats.com", "admin"];
+    const ADMIN_EMAILS = ["admin@innovatorcheats.com", "yashmajevadiya456@gmail.com"];
+
+    // Check if user is authorized administrator
+    function isAuthorizedAdmin(user) {
+      if (!user) return false;
+      if (ADMIN_UIDS.includes(user.uid)) return true;
+      if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) return true;
+      if (user.email && (user.email.toLowerCase().includes("innovatorcheats.com") || user.email.toLowerCase() === "yashmajevadiya456@gmail.com")) return true;
+      return false;
+    }
 
     // Track state globally
     let currentTab = "overview";
@@ -278,12 +287,22 @@
     // Monitor Auth State
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Allow any logged in user or admin emails/uids
-        adminUser = user;
-        document.getElementById("loginSection").classList.add("hidden");
-        document.getElementById("adminPanel").classList.remove("hidden");
-        document.getElementById("activeAdminText").textContent = user.email || "Admin";
-        switchTab("overview");
+        if (isAuthorizedAdmin(user)) {
+          adminUser = user;
+          document.getElementById("loginSection").classList.add("hidden");
+          document.getElementById("adminPanel").classList.remove("hidden");
+          document.getElementById("activeAdminText").textContent = user.email || "Master Admin";
+          switchTab("overview");
+        } else {
+          // Unauthorized user trying to access admin panel!
+          console.warn("[Security Denied] Unauthorized access attempt by UID:", user.uid, "Email:", user.email);
+          await signOut(auth);
+          adminUser = null;
+          document.getElementById("loginSection").classList.remove("hidden");
+          document.getElementById("adminPanel").classList.add("hidden");
+          const errBox = document.getElementById("loginError");
+          if (errBox) errBox.textContent = `Access Denied: (${user.email || 'User'}) is not an authorized Master Administrator.`;
+        }
       } else {
         adminUser = null;
         document.getElementById("loginSection").classList.remove("hidden");
@@ -313,24 +332,17 @@
       loginError.textContent = "";
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        // If account doesn't exist yet, auto-create it
-        if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
-          try {
-            const cred = await createUserWithEmailAndPassword(auth, email, password);
-            ADMIN_UIDS.push(cred.user.uid);
-            console.log("[Admin] Created admin account with UID:", cred.user.uid);
-          } catch (createErr) {
-            loginError.textContent = createErr.message || "Failed to create admin account.";
-            btn.disabled = false;
-            btn.textContent = "Authorize Session";
-          }
-        } else {
-          loginError.textContent = err.message || "Failed to authenticate.";
-          btn.disabled = false;
-          btn.textContent = "Authorize Session";
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        if (!isAuthorizedAdmin(cred.user)) {
+          await signOut(auth);
+          loginError.textContent = `Access Denied: (${email}) does not have Master Admin clearance.`;
         }
+      } catch (err) {
+        // Strict: DO NOT create random users when wrong login is entered!
+        loginError.textContent = err.message || "Invalid admin credentials or account not found.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Authorize Session";
       }
     };
 
