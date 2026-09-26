@@ -5,6 +5,11 @@ export const CursorGlow: React.FC = () => {
   const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Disable on touch devices
+    if (window.matchMedia('(pointer: coarse)').matches) {
+      return;
+    }
+
     const dot = dotRef.current;
     const glow = glowRef.current;
     if (!dot || !glow) return;
@@ -26,11 +31,11 @@ export const CursorGlow: React.FC = () => {
     // GPU-accelerated animation loop using translate3d
     const animate = () => {
       if (isMoving) {
-        // Smooth lerp for the outer glow blob only
+        // Smooth lerp for outer glow blob
         currentX += (mouseX - currentX) * 0.15;
         currentY += (mouseY - currentY) * 0.15;
 
-        // Instant position for the inner dot to prevent desync / DPI lag
+        // Instant position for the inner dot
         if (dot) {
           dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
         }
@@ -39,7 +44,7 @@ export const CursorGlow: React.FC = () => {
           glow.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) translate(-50%, -50%)`;
         }
         
-        // Stop animating if outer glow caught up with mouse to save CPU cycles
+        // Stop animating if outer glow caught up with mouse
         if (Math.abs(mouseX - currentX) < 0.1 && Math.abs(mouseY - currentY) < 0.1) {
           isMoving = false;
         }
@@ -58,8 +63,8 @@ export const CursorGlow: React.FC = () => {
   }, []);
 
   return (
-    <>
-      {/* Outer slow glow blob — GPU accelerated, low opacity */}
+    <div className="hidden md:block">
+      {/* Outer slow glow blob — GPU accelerated, ember orange */}
       <div
         ref={glowRef}
         className="fixed pointer-events-none z-[9998] left-0 top-0"
@@ -67,14 +72,14 @@ export const CursorGlow: React.FC = () => {
           width: '160px',
           height: '160px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(0, 170, 255, 0.12) 0%, rgba(0, 100, 255, 0.05) 50%, transparent 75%)',
+          background: 'radial-gradient(circle, rgba(255, 102, 0, 0.15) 0%, rgba(255, 50, 0, 0.05) 50%, transparent 75%)',
           filter: 'blur(8px)',
           willChange: 'transform',
           mixBlendMode: 'screen',
         }}
       />
 
-      {/* Inner sharp cursor dot — instant alignment, GPU accelerated */}
+      {/* Inner sharp cursor dot — glowing ember */}
       <div
         ref={dotRef}
         className="fixed pointer-events-none z-[9999] left-0 top-0"
@@ -82,11 +87,11 @@ export const CursorGlow: React.FC = () => {
           width: '6px',
           height: '6px',
           borderRadius: '50%',
-          background: 'rgba(0, 200, 255, 0.95)',
-          boxShadow: '0 0 6px 2px rgba(0, 180, 255, 0.5)',
+          background: 'rgba(255, 170, 0, 0.95)',
+          boxShadow: '0 0 8px 2px rgba(255, 102, 0, 0.6)',
           willChange: 'transform',
         }}
       />
-    </>
+    </div>
   );
 };

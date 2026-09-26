@@ -1,9 +1,19 @@
 [
   {
     "id": "usr_seed",
-    "email": "creator@inovaaters.com",
+    "email": "yashmajevadiya456@gmail.com",
     "passwordHash": "$2b$10$RDegcNol/Q9MfUk0lkeHO.AvkECEn/0HbKNUCvQQfcaTydD/.rE9y",
-    "createdAt": "2026-07-03T09:43:14.234Z"
+    "createdAt": "2026-07-03T09:43:14.234Z",
+    "plan": "enterprise",
+    "role": "owner"
+  },
+  {
+    "id": "usr_email_seed",
+    "email": "yashmajevadiya456@email.com",
+    "passwordHash": "$2b$10$RDegcNol/Q9MfUk0lkeHO.AvkECEn/0HbKNUCvQQfcaTydD/.rE9y",
+    "createdAt": "2026-08-22T18:00:00.000Z",
+    "plan": "enterprise",
+    "role": "owner"
   },
   {
     "id": "usr_c7c4b9b7",
@@ -16,5 +26,40 @@
     "email": "phonkastral6@gmail.com",
     "passwordHash": "firebase_auth_provider",
     "createdAt": "2026-07-03T10:11:17.042Z"
+  },
+  {
+    "id": "usr_yashmajevadiya",
+    "email": "yashmajevadiya456@gmail.com",
+    "passwordHash": "$2b$10$RDegcNol/Q9MfUk0lkeHO.AvkECEn/0HbKNUCvQQfcaTydD/.rE9y",
+    "createdAt": "2026-08-20T10:05:00.000Z",
+    "plan": "enterprise",
+    "role": "owner"
+  },
+  {
+    "id": "usr_9d83aeca",
+    "email": "testuser99@email.com",
+    "passwordHash": "$2b$10$7YB1TfQxGQzQI5ukHsLmhuIEnIfn/2MuAeEk0RJu3UBaqIUQXWEYy",
+    "createdAt": "2026-08-22T12:56:06.109Z",
+    "role": "admin",
+    "plan": "enterprise",
+    "planExpiry": null
+  },
+  {
+    "id": "usr_631140db",
+    "email": "reselleryash@gmail.com",
+    "passwordHash": "$2b$10$E.DZUhy.qYib1ENrON4P8eaURVg8p1fgq2gn4VXHHAxf6eJrKdBD.",
+    "createdAt": "2026-08-22T13:00:12.305Z",
+    "role": "reseller",
+    "plan": "seller_lite",
+    "planExpiry": null
+  },
+  {
+    "id": "usr_a45f07fb",
+    "email": "mysecondgmail@gmail.com",
+    "passwordHash": "$2b$10$q9IXvnaYhEFWHNEZgjlqA.0iea8Uzc.mEQ2NC8AphQQTAJSvhKwqe",
+    "createdAt": "2026-08-22T13:02:21.542Z",
+    "role": "owner",
+    "plan": "enterprise",
+    "planExpiry": null
   }
 ]

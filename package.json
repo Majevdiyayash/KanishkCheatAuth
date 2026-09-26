@@ -1,5 +1,5 @@
 {
-  "name": "innovator-cheats",
+  "name": "kanishk-cheat-auth",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -20,13 +20,14 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "firebase": "^12.15.0",
-    "firebase-admin": "^14.1.0",
+    "firebase-admin": "^14.3.0",
     "framer-motion": "^12.42.2",
     "gsap": "^3.15.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "tsx": "^4.22.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",

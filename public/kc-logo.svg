@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Dark Ember Radial Glow -->
+    <radialGradient id="emberGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff5500" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#ff2200" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0a0505" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- Outer Fiery Ring Gradient -->
+    <linearGradient id="fireRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffaa00"/>
+      <stop offset="30%" stop-color="#ff5500"/>
+      <stop offset="70%" stop-color="#ff1100"/>
+      <stop offset="100%" stop-color="#990000"/>
+    </linearGradient>
+
+    <!-- Inner Core KC Gradient -->
+    <linearGradient id="kcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#ffe0b2"/>
+      <stop offset="100%" stop-color="#ff6600"/>
+    </linearGradient>
+
+    <!-- Fiery Bloom Filter -->
+    <filter id="flameBloom" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Ambient Glow -->
+  <circle cx="256" cy="256" r="240" fill="url(#emberGlow)"/>
+
+  <!-- Outer Dark Armor Ring -->
+  <circle cx="256" cy="256" r="210" fill="#120808" stroke="url(#fireRing)" stroke-width="14" filter="url(#flameBloom)"/>
+
+  <!-- Inner Tech Dashed Circle -->
+  <circle cx="256" cy="256" r="185" fill="#1c0c0a" stroke="rgba(255, 102, 0, 0.4)" stroke-width="3" stroke-dasharray="10 8"/>
+
+  <!-- Center Fiery Shield Core -->
+  <circle cx="256" cy="256" r="150" fill="rgba(255, 51, 0, 0.15)" stroke="url(#fireRing)" stroke-width="4"/>
+
+  <!-- Stylized KC Letters with Flaming Gaming aesthetic -->
+  <g filter="url(#flameBloom)">
+    <!-- Letter K -->
+    <path d="M150 140 V372 C150 378 156 384 162 384 H186 C192 384 198 378 198 372 V140 C198 134 192 128 186 128 H162 C156 128 150 134 150 140 Z" fill="url(#kcGrad)"/>
+    <path d="M194 256 L268 150 C272 144 280 144 286 150 L304 168 C309 173 309 181 304 187 L236 268 Z" fill="url(#kcGrad)"/>
+    <path d="M224 256 L306 364 C311 370 311 378 306 384 L288 402 C282 408 274 408 268 402 L194 280 Z" fill="url(#kcGrad)"/>
+
+    <!-- Letter C Overlay on right -->
+    <path d="M375 160 C325 150 280 190 280 256 C280 322 325 362 375 352 C385 350 392 342 392 332 V316 C392 306 384 298 374 300 C345 306 320 288 320 256 C320 224 345 206 374 212 C384 214 392 206 392 196 V180 C392 170 385 162 375 160 Z" fill="url(#kcGrad)"/>
+  </g>
+
+  <!-- Ember Sparks -->
+  <polygon points="256,70 262,86 278,92 262,98 256,114 250,98 234,92 250,86" fill="#ffaa00" filter="url(#flameBloom)"/>
+  <polygon points="410,230 414,240 424,244 414,248 410,258 406,248 396,244 406,240" fill="#ff7700" filter="url(#flameBloom)"/>
+  <polygon points="100,280 104,290 114,294 104,298 100,308 96,298 86,294 96,290" fill="#ff5500" filter="url(#flameBloom)"/>
+</svg>

@@ -18,5 +18,45 @@
     "appid": "APP_7E29B5",
     "version": "1.0",
     "createdAt": "2026-07-03T10:11:39.819Z"
+  },
+  {
+    "id": "app_b50cf4d0",
+    "ownerId": "usr_seed",
+    "appName": "YASH",
+    "ownerid": "usr_seed",
+    "secret": "06899081b197c395b4cf3e7e10f902f0",
+    "appid": "APP_77DE06A3",
+    "version": "1.0",
+    "createdAt": "2026-08-22T13:06:24.064Z"
+  },
+  {
+    "id": "app_60c2aecc",
+    "ownerId": "usr_seed",
+    "appName": "TEST_APP_2",
+    "ownerid": "usr_seed",
+    "secret": "9f63cc84336cc300f3b285e5404cbfb3",
+    "appid": "APP_4CB916C8",
+    "version": "1.0",
+    "createdAt": "2026-08-22T13:17:16.014Z"
+  },
+  {
+    "id": "app_57154cc8",
+    "ownerId": "MynuGFjwBXRSJlbwzjXRNMsctuw1",
+    "appName": "YASH",
+    "ownerid": "MynuGFjwBXRSJlbwzjXRNMsctuw1",
+    "secret": "c401284127d4144791cfffd6182267f0",
+    "appid": "APP_A577AD17",
+    "version": "1.0",
+    "createdAt": "2026-08-22T13:19:01.098Z"
+  },
+  {
+    "id": "app_44e77bc4",
+    "ownerId": "7lfYYThFs6MqfGesbvR2ikSbLmT2",
+    "appName": "TEST",
+    "ownerid": "7lfYYThFs6MqfGesbvR2ikSbLmT2",
+    "secret": "9b89bda1f88d15e68852255fcf56dd79",
+    "appid": "APP_AA1CEEF5",
+    "version": "1.0",
+    "createdAt": "2026-08-31T12:31:57.587Z"
   }
 ]

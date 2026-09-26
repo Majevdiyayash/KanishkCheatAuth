@@ -455,6 +455,7 @@
               <thead>
                 <tr class="bg-white/5 text-gray-400 border-b border-white/5 text-xs">
                   <th class="p-4">UID / Email</th>
+                  <th class="p-4">System Role</th>
                   <th class="p-4">Subscription Plan</th>
                   <th class="p-4">Expiry Date</th>
                   <th class="p-4">Ban Status</th>
@@ -464,13 +465,21 @@
               <tbody>
                 ${usersList.length === 0 ? `
                   <tr>
-                    <td colspan="5" class="p-8 text-center text-gray-500 font-sans">No user records found.</td>
+                    <td colspan="6" class="p-8 text-center text-gray-500 font-sans">No user records found.</td>
                   </tr>
                 ` : usersList.map(user => `
                   <tr class="border-b border-white/5 hover:bg-white/[0.01]">
                     <td class="p-4">
                       <span class="text-white font-semibold block">${user.email || "No Email"}</span>
                       <span class="text-[10px] text-gray-600 block truncate max-w-[180px]">${user.id}</span>
+                    </td>
+                    <td class="p-4">
+                      <select onchange="updateUserRole('${user.id}', this.value)" class="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/40">
+                        <option value="user" ${user.role === 'user' || !user.role ? 'selected' : ''}>User</option>
+                        <option value="reseller" ${user.role === 'reseller' ? 'selected' : ''}>Reseller</option>
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        <option value="owner" ${user.role === 'owner' ? 'selected' : ''}>Owner</option>
+                      </select>
                     </td>
                     <td class="p-4">
                       <select onchange="updateUserPlan('${user.id}', this.value)" class="bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/40">
@@ -498,6 +507,16 @@
         </div>
       `;
     }
+
+    // Update user system role
+    window.updateUserRole = async (uid, roleVal) => {
+      try {
+        await updateDoc(doc(db, "users", uid), { role: roleVal });
+        showToast("User role updated successfully!");
+      } catch (err) {
+        showToast("Failed: " + err.message, true);
+      }
+    };
 
     // Update user sub plan
     window.updateUserPlan = async (uid, planId) => {

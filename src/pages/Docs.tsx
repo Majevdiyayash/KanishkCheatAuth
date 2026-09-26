@@ -176,7 +176,7 @@ export const Docs: React.FC<DocsProps> = ({ onBack }) => {
           </button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-white">API DOCUMENTATION</h1>
-            <p className="text-sm text-gray-500 font-mono mt-1">INNOVATOR CHEATS KeyAuth Core REST API v1.0.0</p>
+            <p className="text-sm text-gray-500 font-mono mt-1">KANISHK CHEAT AUTH Core REST API v1.0.0</p>
           </div>
         </div>
         <div className="flex items-center bg-cyan-950/20 border border-cyan-800/30 px-4 py-2 rounded-lg">

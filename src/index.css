@@ -157,9 +157,12 @@ body {
 }
 
 /* ================================================
-   Custom cursor — hide system cursor globally so
+   Custom cursor — hide system cursor on desktop mice so
    our CursorGlow dot renders cleanly
    ================================================ */
-*, *::before, *::after {
-  cursor: none !important;
+@media (pointer: fine) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
 }
+

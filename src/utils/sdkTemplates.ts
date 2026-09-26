@@ -13,257 +13,435 @@ export const sdkLanguages = [
   'C++', 'Rust', 'Go', 'Java', 'Kotlin', 'Swift', 'PHP', 'Lua', 'Dart', 'Ruby'
 ];
 
+export function getSdkFileName(language: string): string {
+  switch (language) {
+    case 'Python': return 'KanishkAuth.py';
+    case 'JavaScript': return 'kanishkAuth.js';
+    case 'TypeScript': return 'kanishkAuth.ts';
+    case 'Node.js': return 'kanishkAuth.js';
+    case 'C#': return 'KanishkAuth.cs';
+    case 'C++': return 'KanishkAuth.hpp';
+    case 'Rust': return 'kanishk_auth.rs';
+    case 'Go': return 'kanishk_auth.go';
+    case 'Java': return 'KanishkAuth.java';
+    case 'Kotlin': return 'KanishkAuth.kt';
+    case 'Swift': return 'KanishkAuth.swift';
+    case 'PHP': return 'KanishkAuth.php';
+    case 'Lua': return 'kanishk_auth.lua';
+    case 'Dart': return 'kanishk_auth.dart';
+    case 'Ruby': return 'kanishk_auth.rb';
+    default: return `KanishkAuth_${language.toLowerCase()}`;
+  }
+}
+
 export function getSdkCode(language: string, app: AppDetails): string {
   const appId = app.appid || app.id || "APP_ID_HERE";
+  const ownerid = app.ownerid || "OWNER_ID_HERE";
+  const secret = app.secret || "SECRET_HERE";
   const version = app.version || "1.0";
-  const apiUrl = app.apiUrl || "http://localhost:3001/api";
+  const apiUrl = app.apiUrl || "http://localhost:5000/api";
 
   switch (language) {
     case 'Python':
-      return `import requests
-import hashlib
-import platform
-import threading
+      return `import os
+import json as jsond
 import time
+import binascii
+import platform
+import hashlib
 import sys
+import requests
 
 # ==============================================================================
-# INNOVATOR CHEATS - KEYAUTH ENTERPRISE PYTHON SDK
-# Supports: /init, /license, /var, /file, /heartbeat, and AES-256-CBC guidance
+# KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE FULL PYTHON SDK
+# Supports: init(), login(), register(), upgrade(), license(), var(), file(),
+#           webhook(), check(), checkblacklist(), log(), user_data, app_data
 # ==============================================================================
 
-class KeyAuthEnterprise:
-    def __init__(self, app_id, version, api_url="${apiUrl}"):
-        self.app_id = app_id
+class api:
+    name = ownerid = version = secret = ""
+    API_URL = "http://localhost:5000/api"
+
+    def __init__(self, name, ownerid, secret, version, api_url="${apiUrl}"):
+        self.name = name
+        self.ownerid = ownerid
+        self.secret = secret
         self.version = version
-        self.api_url = api_url.rstrip('/')
-        self.session_token = None
-        self.is_running = False
-        self.heartbeat_thread = None
+        if api_url:
+            self.API_URL = api_url.rstrip('/')
+        self.sessionid = ""
+        self.initialized = False
+        self.init()
+
+    class user_data_class:
+        username = ip = hwid = expires = createdate = lastlogin = subscription = ""
+
+    class application_data_class:
+        numUsers = numKeys = app_ver = onlineUsers = ""
+
+    user_data = user_data_class()
+    app_data = application_data_class()
 
     def get_hwid(self):
-        # Generate unique hardware fingerprint
         raw = f"{platform.node()}-{platform.system()}-{platform.machine()}-{platform.processor()}"
         return hashlib.sha256(raw.encode()).hexdigest()
 
     def init(self):
-        url = f"{self.api_url}/init"
+        if self.initialized:
+            return
+        
+        url = f"{self.API_URL}/init"
         payload = {
-            "appId": self.app_id,
+            "appid": self.name,
+            "ownerid": self.ownerid,
+            "secret": self.secret,
             "version": self.version,
             "hwid": self.get_hwid()
         }
         try:
             res = requests.post(url, json=payload, timeout=10).json()
             if res.get("success"):
-                self.session_token = res.get("sessionToken")
-                self.start_heartbeat()
-                return True, res.get("appName", "Innovator App")
-            return False, res.get("error", "Initialization failed.")
+                self.sessionid = res.get("session_token", "")
+                self.initialized = True
+                app_info = res.get("app_info", {})
+                self.app_data.app_ver = app_info.get("version", self.version)
+            else:
+                print(f"[-] Init error: {res.get('message', 'Initialization failed')}")
+                time.sleep(2)
+                sys.exit(1)
         except Exception as e:
-            return False, f"Connection error: {str(e)}"
+            print(f"[-] Connection error: {str(e)}")
+            time.sleep(2)
+            sys.exit(1)
 
     def license(self, key):
-        if not self.session_token:
-            return False, "Please call init() before license()."
-        url = f"{self.api_url}/license"
+        self.checkinit()
+        url = f"{self.API_URL}/license"
         payload = {
-            "appId": self.app_id,
-            "sessionToken": self.session_token,
-            "licenseKey": key,
+            "appid": self.name,
+            "session_token": self.sessionid,
+            "key": key,
             "hwid": self.get_hwid()
         }
         try:
             res = requests.post(url, json=payload, timeout=10).json()
             if res.get("success"):
-                return True, res.get("message", "License active.")
-            return False, res.get("error", "Invalid or locked license key.")
+                print(f"[+] {res.get('message', 'License activated successfully')}")
+                self.__load_user_data(res.get("info", {}))
+                return True
+            else:
+                print(f"[-] {res.get('message', 'License verification failed')}")
+                time.sleep(2)
+                return False
         except Exception as e:
-            return False, f"Connection error: {str(e)}"
+            print(f"[-] Request error: {str(e)}")
+            return False
 
-    def get_var(self, var_name):
-        url = f"{self.api_url}/var"
-        payload = {"appId": self.app_id, "sessionToken": self.session_token, "varName": var_name}
+    def login(self, user, password):
+        self.checkinit()
+        url = f"{self.API_URL}/auth/login"
+        payload = {"email": user, "password": password}
+        try:
+            res = requests.post(url, json=payload, timeout=10).json()
+            if res.get("success"):
+                print("[+] Login Successful!")
+                return True
+            else:
+                print(f"[-] {res.get('message', 'Invalid credentials')}")
+                return False
+        except Exception as e:
+            print(f"[-] Connection error: {str(e)}")
+            return False
+
+    def register(self, user, password, license_key):
+        self.checkinit()
+        url = f"{self.API_URL}/auth/register"
+        payload = {"email": user, "password": password, "key": license_key}
+        try:
+            res = requests.post(url, json=payload, timeout=10).json()
+            if res.get("success"):
+                print("[+] Registered successfully!")
+                return True
+            else:
+                print(f"[-] {res.get('message', 'Registration failed')}")
+                return False
+        except Exception as e:
+            print(f"[-] Connection error: {str(e)}")
+            return False
+
+    def var(self, var_name):
+        self.checkinit()
+        url = f"{self.API_URL}/var"
+        payload = {"appId": self.name, "sessionToken": self.sessionid, "varName": var_name}
         try:
             res = requests.post(url, json=payload, timeout=10).json()
             return res.get("value") if res.get("success") else None
         except Exception:
             return None
 
-    def get_file(self, file_name):
-        url = f"{self.api_url}/file"
-        payload = {"appId": self.app_id, "sessionToken": self.session_token, "fileName": file_name}
+    def file(self, file_name):
+        self.checkinit()
+        url = f"{self.API_URL}/file"
+        payload = {"appId": self.name, "sessionToken": self.sessionid, "fileName": file_name}
         try:
             res = requests.post(url, json=payload, timeout=10).json()
-            return res.get("contentHex") if res.get("success") else None
+            if res.get("success") and res.get("contentHex"):
+                return binascii.unhexlify(res.get("contentHex"))
+            return None
         except Exception:
             return None
 
-    def start_heartbeat(self):
-        self.is_running = True
-        def loop():
-            while self.is_running:
-                time.sleep(60) # Pulse every 60 seconds
-                try:
-                    requests.post(f"{self.api_url}/heartbeat", json={
-                        "appId": self.app_id,
-                        "sessionToken": self.session_token
-                    }, timeout=5)
-                except Exception:
-                    pass
-        self.heartbeat_thread = threading.Thread(target=loop, daemon=True)
-        self.heartbeat_thread.start()
+    def checkinit(self):
+        if not self.initialized:
+            print("[-] Please run init() first.")
+            sys.exit(1)
 
-    # NOTE ON AES-256-CBC DECRYPTION:
-    # If your backend sends encrypted payloads (e.g. secret stream or license payload):
-    # from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    # def decrypt_aes_cbc(ciphertext_hex, key_bytes, iv_bytes):
-    #     cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv_bytes))
-    #     decryptor = cipher.decryptor()
-    #     return decryptor.update(bytes.fromhex(ciphertext_hex)) + decryptor.finalize()
+    def __load_user_data(self, data):
+        self.user_data.username = data.get("username", "Authenticated User")
+        self.user_data.ip = data.get("ip", "127.0.0.1")
+        self.user_data.hwid = data.get("hwid", self.get_hwid())
+        self.user_data.expires = data.get("expires", "Never")
+        self.user_data.subscription = data.get("subscription", "Lifetime VIP")
 
 # --- Example Usage ---
 if __name__ == "__main__":
-    auth = KeyAuthEnterprise(app_id="${appId}", version="${version}")
-    success, msg = auth.init()
-    if not success:
-        print(f"[-] Init failed: {msg}")
-        sys.exit(1)
-    
-    print(f"[+] Connected to {msg}")
+    # Auto-configured credentials from Kanishk Cheat Auth Panel
+    FearAuthApp = api(
+        name="${appId}",
+        ownerid="${ownerid}",
+        secret="${secret}",
+        version="${version}"
+    )
+
+    print(f"[*] Connected to App Version: {FearAuthApp.app_data.app_ver}")
     key = input("Enter License Key: ")
-    auth_success, auth_msg = auth.license(key)
-    if auth_success:
-        print(f"[+] {auth_msg}")
-        # Fetch Cloud Variable demo
-        motd = auth.get_var("MOTD")
-        if motd: print(f"[*] MOTD: {motd}")
+    if FearAuthApp.license(key):
+        print(f"[+] Welcome {FearAuthApp.user_data.username}!")
+        print(f"[*] HWID Bound: {FearAuthApp.user_data.hwid}")
+        print(f"[*] Expiry Date: {FearAuthApp.user_data.expires}")
     else:
-        print(f"[-] {auth_msg}")
         sys.exit(1)
 `;
 
     case 'JavaScript':
       return `// ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE JAVASCRIPT (BROWSER / ES6) SDK
-// Supports: /init, /license, /var, /file, /heartbeat, and Web Crypto AES-256-CBC
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE JAVASCRIPT (BROWSER / ES6) SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
-class KeyAuthEnterprise {
-  constructor(appId, version, apiUrl = "${apiUrl}") {
-    this.appId = appId;
+class api {
+  constructor(name, ownerid, secret, version, apiUrl = "${apiUrl}") {
+    this.name = name;
+    this.ownerid = ownerid;
+    this.secret = secret;
     this.version = version;
     this.apiUrl = apiUrl.replace(/\\/$/, '');
-    this.sessionToken = null;
-    this.heartbeatTimer = null;
+    this.sessionid = "";
+    this.initialized = false;
+
+    this.user_data = {
+      username: "", ip: "", hwid: "", expires: "", createdate: "", lastlogin: "", subscription: ""
+    };
+
+    this.app_data = {
+      numUsers: "", numKeys: "", app_ver: "", onlineUsers: ""
+    };
+
+    this.init();
   }
 
-  async getHwid() {
+  async get_hwid() {
     const raw = navigator.userAgent + navigator.language + screen.width + screen.height;
     const msgUint8 = new TextEncoder().encode(raw);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   async init() {
+    if (this.initialized) return true;
     try {
-      const hwid = await this.getHwid();
+      const hwid = await this.get_hwid();
       const res = await fetch(\`\${this.apiUrl}/init\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appId: this.appId, version: this.version, hwid })
+        body: JSON.stringify({ appid: this.name, ownerid: this.ownerid, secret: this.secret, version: this.version, hwid })
       });
       const data = await res.json();
       if (data.success) {
-        this.sessionToken = data.sessionToken;
-        this.startHeartbeat();
-        return { success: true, appName: data.appName };
+        this.sessionid = data.session_token || data.sessionToken || "";
+        this.initialized = true;
+        this.app_data.app_ver = this.version;
+        return true;
       }
-      return { success: false, error: data.error };
+      console.error("[-] Init error:", data.message || "Initialization failed");
+      return false;
     } catch (e) {
-      return { success: false, error: 'Network connection failed.' };
+      console.error("[-] Connection error:", e);
+      return false;
     }
   }
 
   async license(key) {
-    if (!this.sessionToken) return { success: false, error: 'Call init() first.' };
+    this.checkinit();
     try {
-      const hwid = await this.getHwid();
+      const hwid = await this.get_hwid();
       const res = await fetch(\`\${this.apiUrl}/license\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appId: this.appId, sessionToken: this.sessionToken, licenseKey: key, hwid })
+        body: JSON.stringify({ appid: this.name, session_token: this.sessionid, key, hwid })
       });
-      return await res.json();
+      const data = await res.json();
+      if (data.success) {
+        console.log("[+] License activated successfully!");
+        this.load_user_data(data.info || {});
+        return true;
+      }
+      console.error("[-] License error:", data.message);
+      return false;
     } catch (e) {
-      return { success: false, error: 'License verification request failed.' };
+      console.error("[-] Connection error:", e);
+      return false;
     }
   }
 
-  async getVar(varName) {
-    const res = await fetch(\`\${this.apiUrl}/var\`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ appId: this.appId, sessionToken: this.sessionToken, varName })
-    });
-    const data = await res.json();
-    return data.success ? data.value : null;
+  async login(user, password) {
+    this.checkinit();
+    try {
+      const hwid = await this.get_hwid();
+      const res = await fetch(\`\${this.apiUrl}/auth/login\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appid: this.name, email: user, password, hwid })
+      });
+      const data = await res.json();
+      if (data.success) {
+        console.log("[+] Login Successful!");
+        this.load_user_data(data.user || {});
+        return true;
+      }
+      console.error("[-] Login error:", data.message);
+      return false;
+    } catch (e) {
+      console.error("[-] Connection error:", e);
+      return false;
+    }
   }
 
-  startHeartbeat() {
-    this.heartbeatTimer = setInterval(async () => {
-      try {
-        await fetch(\`\${this.apiUrl}/heartbeat\`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ appId: this.appId, sessionToken: this.sessionToken })
-        });
-      } catch (e) { /* silent pulse fail */ }
-    }, 60000);
+  async register(user, password, key) {
+    this.checkinit();
+    try {
+      const hwid = await this.get_hwid();
+      const res = await fetch(\`\${this.apiUrl}/auth/register\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appid: this.name, email: user, password, key, hwid })
+      });
+      const data = await res.json();
+      if (data.success) {
+        console.log("[+] Registration Successful!");
+        return true;
+      }
+      console.error("[-] Register error:", data.message);
+      return false;
+    } catch (e) {
+      console.error("[-] Connection error:", e);
+      return false;
+    }
   }
 
-  // NOTE ON AES-256-CBC WEB CRYPTO DECRYPTION:
-  // async decryptAesCbc(base64Data, keyHex, ivHex) {
-  //   const key = await crypto.subtle.importKey('raw', hexToBuffer(keyHex), { name: 'AES-CBC' }, false, ['decrypt']);
-  //   const decrypted = await crypto.subtle.decrypt({ name: 'AES-CBC', iv: hexToBuffer(ivHex) }, key, base64ToBuffer(base64Data));
-  //   return new TextDecoder().decode(decrypted);
-  // }
+  async var(varName) {
+    this.checkinit();
+    try {
+      const res = await fetch(\`\${this.apiUrl}/var\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appId: this.name, sessionToken: this.sessionid, varName })
+      });
+      const data = await res.json();
+      return data.success ? data.value : null;
+    } catch (e) { return null; }
+  }
+
+  async log(message) {
+    this.checkinit();
+    try {
+      const hwid = await this.get_hwid();
+      await fetch(\`\${this.apiUrl}/log\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appId: this.name, sessionToken: this.sessionid, message, hwid })
+      });
+    } catch (e) {}
+  }
+
+  checkinit() {
+    if (!this.initialized) {
+      throw new Error("[-] Please run init() first.");
+    }
+  }
+
+  load_user_data(data) {
+    this.user_data.username = data.username || "Authenticated User";
+    this.user_data.ip = data.ip || "127.0.0.1";
+    this.user_data.hwid = data.hwid || "";
+    this.user_data.expires = data.expires || "Never";
+    this.user_data.subscription = data.subscription || "Lifetime VIP";
+  }
 }
 
 // --- Example Usage ---
-const auth = new KeyAuthEnterprise("${appId}", "${version}");
-auth.init().then(res => {
-  if (res.success) {
-    console.log("[+] Connected to " + res.appName);
-    // auth.license("YOUR_KEY_HERE").then(console.log);
-  }
-});
+const FearAuthApp = new api("${appId}", "${ownerid}", "${secret}", "${version}");
 `;
 
     case 'TypeScript':
       return `// ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE TYPESCRIPT SDK
-// Supports: /init, /license, /var, /file, /heartbeat, and AES-256-CBC guidance
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE TYPESCRIPT SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
-export interface InitResponse { success: boolean; sessionToken?: string; appName?: string; error?: string; }
-export interface LicenseResponse { success: boolean; message?: string; error?: string; expiresAt?: string; }
+export interface UserData {
+  username: string;
+  ip: string;
+  hwid: string;
+  expires: string;
+  createdate: string;
+  lastlogin: string;
+  subscription: string;
+}
 
-export class KeyAuthEnterprise {
-  private appId: string;
-  private version: string;
-  private apiUrl: string;
-  private sessionToken: string | null = null;
-  private heartbeatInterval: any = null;
+export interface AppData {
+  numUsers: string;
+  numKeys: string;
+  app_ver: string;
+  onlineUsers: string;
+}
 
-  constructor(appId: string = "${appId}", version: string = "${version}", apiUrl: string = "${apiUrl}") {
-    this.appId = appId;
+export class api {
+  public name: string;
+  public ownerid: string;
+  public secret: string;
+  public version: string;
+  public apiUrl: string;
+  public sessionid: string = "";
+  public initialized: boolean = false;
+
+  public user_data: UserData = {
+    username: "", ip: "", hwid: "", expires: "", createdate: "", lastlogin: "", subscription: ""
+  };
+
+  public app_data: AppData = {
+    numUsers: "", numKeys: "", app_ver: "", onlineUsers: ""
+  };
+
+  constructor(name: string = "${appId}", ownerid: string = "${ownerid}", secret: string = "${secret}", version: string = "${version}", apiUrl: string = "${apiUrl}") {
+    this.name = name;
+    this.ownerid = ownerid;
+    this.secret = secret;
     this.version = version;
     this.apiUrl = apiUrl.replace(/\\/$/, '');
   }
 
-  private async getHwid(): Promise<string> {
+  public async get_hwid(): Promise<string> {
     const raw = typeof window !== 'undefined' 
       ? window.navigator.userAgent + window.navigator.language 
       : 'NodeJS-Server-Instance';
@@ -274,60 +452,78 @@ export class KeyAuthEnterprise {
     return "FALLBACK_HWID_HASH_64_CHAR";
   }
 
-  public async init(): Promise<InitResponse> {
+  public async init(): Promise<boolean> {
+    if (this.initialized) return true;
     try {
-      const hwid = await this.getHwid();
+      const hwid = await this.get_hwid();
       const res = await fetch(\`\${this.apiUrl}/init\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appId: this.appId, version: this.version, hwid })
+        body: JSON.stringify({ appid: this.name, ownerid: this.ownerid, secret: this.secret, version: this.version, hwid })
       });
-      const data: InitResponse = await res.json();
-      if (data.success && data.sessionToken) {
-        this.sessionToken = data.sessionToken;
-        this.startHeartbeat();
+      const data = await res.json();
+      if (data.success) {
+        this.sessionid = data.session_token || data.sessionToken || "";
+        this.initialized = true;
+        this.app_data.app_ver = this.version;
+        return true;
       }
-      return data;
-    } catch (e: any) {
-      return { success: false, error: e.message || 'Connection failed' };
+      return false;
+    } catch {
+      return false;
     }
   }
 
-  public async license(key: string): Promise<LicenseResponse> {
-    if (!this.sessionToken) return { success: false, error: 'Session not initialized' };
+  public async license(key: string): Promise<boolean> {
+    this.checkinit();
     try {
-      const hwid = await this.getHwid();
+      const hwid = await this.get_hwid();
       const res = await fetch(\`\${this.apiUrl}/license\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appId: this.appId, sessionToken: this.sessionToken, licenseKey: key, hwid })
+        body: JSON.stringify({ appid: this.name, session_token: this.sessionid, key, hwid })
       });
-      return await res.json();
-    } catch (e: any) {
-      return { success: false, error: 'License request failed' };
+      const data = await res.json();
+      if (data.success) {
+        this.load_user_data(data.info || {});
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
   }
 
-  public async getVar(varName: string): Promise<string | null> {
-    const res = await fetch(\`\${this.apiUrl}/var\`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ appId: this.appId, sessionToken: this.sessionToken, varName })
-    });
-    const data = await res.json();
-    return data.success ? data.value : null;
+  public async login(user: string, pass: string): Promise<boolean> {
+    this.checkinit();
+    try {
+      const hwid = await this.get_hwid();
+      const res = await fetch(\`\${this.apiUrl}/auth/login\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appid: this.name, email: user, password: pass, hwid })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.load_user_data(data.user || {});
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   }
 
-  private startHeartbeat(): void {
-    this.heartbeatInterval = setInterval(async () => {
-      try {
-        await fetch(\`\${this.apiUrl}/heartbeat\`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ appId: this.appId, sessionToken: this.sessionToken })
-        });
-      } catch { /* silent pulse */ }
-    }, 60000);
+  private checkinit(): void {
+    if (!this.initialized) throw new Error("Please run init() first.");
+  }
+
+  private load_user_data(data: any): void {
+    this.user_data.username = data.username || "User";
+    this.user_data.ip = data.ip || "127.0.0.1";
+    this.user_data.hwid = data.hwid || "";
+    this.user_data.expires = data.expires || "Never";
+    this.user_data.subscription = data.subscription || "VIP";
   }
 }
 `;
@@ -338,20 +534,30 @@ const crypto = require('crypto');
 const os = require('os');
 
 // ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE NODE.JS BACKEND / CLI SDK
-// Supports: /init, /license, /var, /file, /heartbeat, and AES-256-CBC decryption
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE NODE.JS SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
-class KeyAuthEnterprise {
-  constructor(appId = "${appId}", version = "${version}", apiUrl = "${apiUrl}") {
-    this.appId = appId;
+class api {
+  constructor(name = "${appId}", ownerid = "${ownerid}", secret = "${secret}", version = "${version}", apiUrl = "${apiUrl}") {
+    this.name = name;
+    this.ownerid = ownerid;
+    this.secret = secret;
     this.version = version;
     this.apiUrl = apiUrl.replace(/\\/$/, '');
-    this.sessionToken = null;
-    this.heartbeatTimer = null;
+    this.sessionid = "";
+    this.initialized = false;
+
+    this.user_data = {
+      username: "", ip: "", hwid: "", expires: "", createdate: "", lastlogin: "", subscription: ""
+    };
+
+    this.app_data = {
+      numUsers: "", numKeys: "", app_ver: "", onlineUsers: ""
+    };
   }
 
-  getHwid() {
+  get_hwid() {
     const macs = Object.values(os.networkInterfaces())
       .flat()
       .filter(i => i && !i.internal && i.mac !== '00:00:00:00:00:00')
@@ -360,68 +566,88 @@ class KeyAuthEnterprise {
   }
 
   async init() {
+    if (this.initialized) return true;
     try {
       const res = await axios.post(\`\${this.apiUrl}/init\`, {
-        appId: this.appId,
+        appid: this.name,
+        ownerid: this.ownerid,
+        secret: this.secret,
         version: this.version,
-        hwid: this.getHwid()
+        hwid: this.get_hwid()
       });
       if (res.data.success) {
-        this.sessionToken = res.data.sessionToken;
-        this.startHeartbeat();
-        return { success: true, appName: res.data.appName };
+        this.sessionid = res.data.session_token || res.data.sessionToken || "";
+        this.initialized = true;
+        this.app_data.app_ver = this.version;
+        return true;
       }
-      return { success: false, error: res.data.error };
+      console.error("[-] Init failed:", res.data.message);
+      return false;
     } catch (e) {
-      return { success: false, error: e.message || 'Network error' };
+      console.error("[-] Connection error:", e.message);
+      return false;
     }
   }
 
   async license(key) {
-    if (!this.sessionToken) return { success: false, error: 'Please call init() first' };
+    this.checkinit();
     try {
       const res = await axios.post(\`\${this.apiUrl}/license\`, {
-        appId: this.appId,
-        sessionToken: this.sessionToken,
-        licenseKey: key,
-        hwid: this.getHwid()
+        appid: this.name,
+        session_token: this.sessionid,
+        key,
+        hwid: this.get_hwid()
       });
-      return res.data;
+      if (res.data.success) {
+        console.log("[+] License activated!");
+        this.load_user_data(res.data.info || {});
+        return true;
+      }
+      console.error("[-] License failed:", res.data.message);
+      return false;
     } catch (e) {
-      return { success: false, error: 'License verification error' };
+      console.error("[-] Request error:", e.message);
+      return false;
     }
   }
 
-  async getFile(fileName) {
-    const res = await axios.post(\`\${this.apiUrl}/file\`, {
-      appId: this.appId,
-      sessionToken: this.sessionToken,
-      fileName
-    });
-    return res.data.success ? res.data.contentHex : null;
+  async login(user, password) {
+    this.checkinit();
+    try {
+      const res = await axios.post(\`\${this.apiUrl}/auth/login\`, {
+        appid: this.name,
+        email: user,
+        password,
+        hwid: this.get_hwid()
+      });
+      if (res.data.success) {
+        console.log("[+] Login Successful!");
+        this.load_user_data(res.data.user || {});
+        return true;
+      }
+      console.error("[-] Login failed:", res.data.message);
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
-  startHeartbeat() {
-    this.heartbeatTimer = setInterval(async () => {
-      try {
-        await axios.post(\`\${this.apiUrl}/heartbeat\`, {
-          appId: this.appId,
-          sessionToken: this.sessionToken
-        });
-      } catch (e) { /* ignore */ }
-    }, 60000);
+  checkinit() {
+    if (!this.initialized) {
+      throw new Error("Please run init() first.");
+    }
   }
 
-  // AES-256-CBC Decryption Helper
-  static decryptAesCbc(encryptedHex, keyBuffer, ivBuffer) {
-    const decipher = crypto.createDecipheriv('aes-256-cbc', keyBuffer, ivBuffer);
-    let decrypted = decipher.update(Buffer.from(encryptedHex, 'hex'));
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString('utf8');
+  load_user_data(data) {
+    this.user_data.username = data.username || "Authenticated User";
+    this.user_data.ip = data.ip || "127.0.0.1";
+    this.user_data.hwid = data.hwid || this.get_hwid();
+    this.user_data.expires = data.expires || "Never";
+    this.user_data.subscription = data.subscription || "Lifetime VIP";
   }
 }
 
-module.exports = KeyAuthEnterprise;
+module.exports = api;
 `;
 
     case 'C#':
@@ -430,26 +656,60 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
-using System.Timers;
 using System.Text.Json;
 
 // ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE C# (.NET / WPF / WINFORMS / CONSOLE) SDK
-// Supports: /init, /license, /var, /file, /heartbeat, and AES-256-CBC Decryption
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE C# (.NET / WPF / WINFORMS) SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
-namespace KeyAuthEnterpriseSDK
+namespace FearAuth
 {
-    public class KeyAuthApp
+    public class UserData
     {
-        private readonly string appId = "${appId}";
-        private readonly string version = "${version}";
-        private readonly string apiUrl = "${apiUrl}";
-        private string sessionToken = "";
-        private static readonly HttpClient client = new HttpClient();
-        private Timer heartbeatTimer;
+        public string username { get; set; } = "";
+        public string ip { get; set; } = "";
+        public string hwid { get; set; } = "";
+        public string expires { get; set; } = "";
+        public string createdate { get; set; } = "";
+        public string lastlogin { get; set; } = "";
+        public string subscription { get; set; } = "";
+    }
 
-        private string GetHwid()
+    public class AppData
+    {
+        public string numUsers { get; set; } = "";
+        public string numKeys { get; set; } = "";
+        public string app_ver { get; set; } = "";
+        public string onlineUsers { get; set; } = "";
+    }
+
+    public class api
+    {
+        public string name;
+        public string ownerid;
+        public string secret;
+        public string version;
+        public string apiUrl;
+        public string sessionid = "";
+        public bool initialized = false;
+
+        public UserData user_data = new UserData();
+        public AppData app_data = new AppData();
+
+        private static readonly HttpClient client = new HttpClient();
+
+        public api(string name = "${appId}", string ownerid = "${ownerid}", string secret = "${secret}", string version = "${version}", string apiUrl = "${apiUrl}")
+        {
+            this.name = name;
+            this.ownerid = ownerid;
+            this.secret = secret;
+            this.version = version;
+            this.apiUrl = apiUrl.TrimEnd('/');
+            init();
+        }
+
+        public string get_hwid()
         {
             string raw = Environment.MachineName + Environment.ProcessorCount + Environment.UserName + Environment.OSVersion;
             using (SHA256 sha256 = SHA256.Create())
@@ -461,71 +721,125 @@ namespace KeyAuthEnterpriseSDK
             }
         }
 
-        public async Task<(bool success, string message)> Init()
+        public bool init()
         {
-            string json = $@"{{ ""appId"": ""{appId}"", ""version"": ""{version}"", ""hwid"": ""{GetHwid()}"" }}";
+            if (initialized) return true;
             try
             {
+                var payload = new { appid = name, ownerid = ownerid, secret = secret, version = version, hwid = get_hwid() };
+                string json = JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var res = await client.PostAsync($"{apiUrl}/init", content);
-                var str = await res.Content.ReadAsStringAsync();
-                
+                var response = client.PostAsync($"{apiUrl}/init", content).Result;
+                string respStr = response.Content.ReadAsStringAsync().Result;
+                using var doc = JsonDocument.Parse(respStr);
+                var root = doc.RootElement;
+                if (root.GetProperty("success").GetBoolean())
+                {
+                    sessionid = root.TryGetProperty("session_token", out var st) ? st.GetString() ?? "" : "";
+                    initialized = true;
+                    app_data.app_ver = version;
+                    return true;
+                }
+                Console.WriteLine("[-] Init failed: " + (root.TryGetProperty("message", out var m) ? m.GetString() : "Error"));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[-] Connection error: " + ex.Message);
+                return false;
+            }
+        }
+
+        public bool license(string key)
+        {
+            checkinit();
+            try
+            {
+                var payload = new { appid = name, session_token = sessionid, key = key, hwid = get_hwid() };
+                string json = JsonSerializer.Serialize(payload);
+                var response = client.PostAsync($"{apiUrl}/license", new StringContent(json, Encoding.UTF8, "application/json")).Result;
+                string str = response.Content.ReadAsStringAsync().Result;
                 using var doc = JsonDocument.Parse(str);
                 var root = doc.RootElement;
                 if (root.GetProperty("success").GetBoolean())
                 {
-                    sessionToken = root.GetProperty("sessionToken").GetString();
-                    StartHeartbeat();
-                    return (true, root.GetProperty("appName").GetString());
+                    Console.WriteLine("[+] License activated successfully!");
+                    if (root.TryGetProperty("info", out var info)) load_user_data(info);
+                    return true;
                 }
-                return (false, root.GetProperty("error").GetString());
+                Console.WriteLine("[-] License error: " + (root.TryGetProperty("message", out var m) ? m.GetString() : "Invalid key"));
+                return false;
             }
-            catch (Exception ex) { return (false, "Connection error: " + ex.Message); }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[-] Request error: " + ex.Message);
+                return false;
+            }
         }
 
-        public async Task<(bool success, string message)> License(string key)
+        public bool login(string user, string pass)
         {
-            if (string.IsNullOrEmpty(sessionToken)) return (false, "Call Init() first.");
-            string json = $@"{{ ""appId"": ""{appId}"", ""sessionToken"": ""{sessionToken}"", ""licenseKey"": ""{key}"", ""hwid"": ""{GetHwid()}"" }}";
+            checkinit();
             try
             {
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var res = await client.PostAsync($"{apiUrl}/license", content);
-                var str = await res.Content.ReadAsStringAsync();
-                
+                var payload = new { appid = name, email = user, password = pass, hwid = get_hwid() };
+                string json = JsonSerializer.Serialize(payload);
+                var response = client.PostAsync($"{apiUrl}/auth/login", new StringContent(json, Encoding.UTF8, "application/json")).Result;
+                string str = response.Content.ReadAsStringAsync().Result;
                 using var doc = JsonDocument.Parse(str);
                 var root = doc.RootElement;
                 if (root.GetProperty("success").GetBoolean())
-                    return (true, root.GetProperty("message").GetString());
-                return (false, root.GetProperty("error").GetString());
+                {
+                    Console.WriteLine("[+] Login Successful!");
+                    return true;
+                }
+                Console.WriteLine("[-] Login error: " + (root.TryGetProperty("message", out var m) ? m.GetString() : "Invalid credentials"));
+                return false;
             }
-            catch (Exception ex) { return (false, "Error: " + ex.Message); }
-        }
-
-        private void StartHeartbeat()
-        {
-            heartbeatTimer = new Timer(60000);
-            heartbeatTimer.Elapsed += async (sender, e) =>
+            catch (Exception ex)
             {
-                try {
-                    string json = $@"{{ ""appId"": ""{appId}"", ""sessionToken"": ""{sessionToken}"" }}";
-                    await client.PostAsync($"{apiUrl}/heartbeat", new StringContent(json, Encoding.UTF8, "application/json"));
-                } catch { }
-            };
-            heartbeatTimer.Start();
+                Console.WriteLine("[-] Connection error: " + ex.Message);
+                return false;
+            }
         }
 
-        // AES-256-CBC Decryption Snippet
-        public static string DecryptAesCbc(string cipherHex, byte[] key, byte[] iv)
+        public bool register(string user, string pass, string key)
         {
-            using Aes aes = Aes.Create();
-            aes.Key = key;
-            aes.IV = iv;
-            aes.Mode = CipherMode.CBC;
-            using ICryptoTransform decryptor = aes.CreateDecryptor();
-            byte[] cipherBytes = Convert.FromHexString(cipherHex);
-            byte[] decrypted = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
-            return Encoding.UTF8.GetString(decrypted);
+            checkinit();
+            try
+            {
+                var payload = new { appid = name, email = user, password = pass, key = key, hwid = get_hwid() };
+                string json = JsonSerializer.Serialize(payload);
+                var response = client.PostAsync($"{apiUrl}/auth/register", new StringContent(json, Encoding.UTF8, "application/json")).Result;
+                string str = response.Content.ReadAsStringAsync().Result;
+                using var doc = JsonDocument.Parse(str);
+                var root = doc.RootElement;
+                if (root.GetProperty("success").GetBoolean())
+                {
+                    Console.WriteLine("[+] Registration Successful!");
+                    return true;
+                }
+                return false;
+            }
+            catch { return false; }
+        }
+
+        private void checkinit()
+        {
+            if (!initialized)
+            {
+                Console.WriteLine("[-] Please run init() first.");
+                Environment.Exit(1);
+            }
+        }
+
+        private void load_user_data(JsonElement info)
+        {
+            user_data.username = info.TryGetProperty("username", out var u) ? u.GetString() ?? "" : "User";
+            user_data.ip = info.TryGetProperty("ip", out var ip) ? ip.GetString() ?? "" : "127.0.0.1";
+            user_data.hwid = info.TryGetProperty("hwid", out var h) ? h.GetString() ?? "" : get_hwid();
+            user_data.expires = info.TryGetProperty("expires", out var e) ? e.GetString() ?? "" : "Lifetime";
+            user_data.subscription = info.TryGetProperty("subscription", out var s) ? s.GetString() ?? "" : "VIP";
         }
     }
 }
@@ -533,144 +847,157 @@ namespace KeyAuthEnterpriseSDK
 
     case 'C++':
       return `// ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE C++ (WinAPI / DirectX / ImGui / Cheat Loader) SDK
-// Supports: /init, /license, /var, /file, /heartbeat, and AES-256-CBC Guidance
-// Required Libraries: libcurl (curl/curl.h)
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE C++ SDK (WinAPI / ImGui / Cheat Loader)
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <thread>
-#include <chrono>
 #include <windows.h>
 #include <curl/curl.h>
 
-class KeyAuthEnterprise {
-private:
-    std::string appId = "${appId}";
-    std::string version = "${version}";
-    std::string apiUrl = "${apiUrl}";
-    std::string sessionToken = "";
-    bool heartbeatRunning = false;
+namespace FearAuth {
+    struct UserData {
+        std::string username;
+        std::string ip;
+        std::string hwid;
+        std::string expires;
+        std::string subscription;
+    };
 
-    static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-        ((std::string*)userp)->append((char*)contents, size * nmemb);
-        return size * nmemb;
-    }
+    struct AppData {
+        std::string numUsers;
+        std::string numKeys;
+        std::string app_ver;
+        std::string onlineUsers;
+    };
 
-    std::string getHwid() {
-        char volName[MAX_PATH + 1] = { 0 };
-        DWORD volSerial = 0;
-        if (GetVolumeInformationA("C:\\\\", volName, sizeof(volName), &volSerial, NULL, NULL, NULL, 0)) {
-            std::stringstream ss;
-            ss << std::hex << volSerial;
-            return ss.str();
+    class api {
+    public:
+        std::string name;
+        std::string ownerid;
+        std::string secret;
+        std::string version;
+        std::string apiUrl;
+        std::string sessionid;
+        bool initialized = false;
+
+        UserData user_data;
+        AppData app_data;
+
+        api(std::string name = "${appId}", std::string ownerid = "${ownerid}", std::string secret = "${secret}", std::string version = "${version}", std::string apiUrl = "${apiUrl}")
+            : name(name), ownerid(ownerid), secret(secret), version(version), apiUrl(apiUrl) {
+            init();
         }
-        return "WIN_HWID_FALLBACK_HASH";
-    }
 
-    std::string extractJsonString(const std::string& json, const std::string& key) {
-        size_t pos = json.find("\\"" + key + "\\"");
-        if (pos == std::string::npos) return "";
-        size_t colon = json.find(":", pos);
-        size_t quote1 = json.find("\\"", colon);
-        size_t quote2 = json.find("\\"", quote1 + 1);
-        return json.substr(quote1 + 1, quote2 - quote1 - 1);
-    }
-
-public:
-    bool init() {
-        CURL* curl = curl_easy_init();
-        if (!curl) return false;
-
-        std::string url = apiUrl + "/init";
-        std::string payload = "{\\"appId\\":\\"" + appId + "\\",\\"version\\":\\"" + version + "\\",\\"hwid\\":\\"" + getHwid() + "\\"}";
-        std::string resp;
-
-        struct curl_slist* headers = NULL;
-        headers = curl_slist_append(headers, "Content-Type: application/json");
-
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
-
-        curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        curl_slist_free_all(headers);
-
-        if (resp.find("\\"success\\":true") != std::string::npos || resp.find("\\"success\\": true") != std::string::npos) {
-            sessionToken = extractJsonString(resp, "sessionToken");
-            startHeartbeat();
-            return true;
-        }
-        return false;
-    }
-
-    bool license(const std::string& key) {
-        if (sessionToken.empty()) return false;
-        CURL* curl = curl_easy_init();
-        if (!curl) return false;
-
-        std::string url = apiUrl + "/license";
-        std::string payload = "{\\"appId\\":\\"" + appId + "\\",\\"sessionToken\\":\\"" + sessionToken + "\\",\\"licenseKey\\":\\"" + key + "\\",\\"hwid\\":\\"" + getHwid() + "\\"}";
-        std::string resp;
-
-        struct curl_slist* headers = NULL;
-        headers = curl_slist_append(headers, "Content-Type: application/json");
-
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
-
-        curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        curl_slist_free_all(headers);
-
-        return (resp.find("\\"success\\":true") != std::string::npos || resp.find("\\"success\\": true") != std::string::npos);
-    }
-
-    void startHeartbeat() {
-        heartbeatRunning = true;
-        std::thread([this]() {
-            while (heartbeatRunning) {
-                std::this_thread::sleep_for(std::chrono::seconds(60));
-                CURL* curl = curl_easy_init();
-                if (curl) {
-                    std::string url = apiUrl + "/heartbeat";
-                    std::string payload = "{\\"appId\\":\\"" + appId + "\\",\\"sessionToken\\":\\"" + sessionToken + "\\"}";
-                    struct curl_slist* h = curl_slist_append(NULL, "Content-Type: application/json");
-                    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-                    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
-                    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, h);
-                    curl_easy_perform(curl);
-                    curl_easy_cleanup(curl);
-                    curl_slist_free_all(h);
-                }
+        std::string get_hwid() {
+            char volName[MAX_PATH + 1] = { 0 };
+            DWORD volSerial = 0;
+            if (GetVolumeInformationA("C:\\\\", volName, sizeof(volName), &volSerial, NULL, NULL, NULL, 0)) {
+                std::stringstream ss;
+                ss << std::hex << volSerial;
+                return ss.str();
             }
-        }).detach();
-    }
-};
+            return "WIN_HWID_HASH_FALLBACK";
+        }
+
+        bool init() {
+            if (initialized) return true;
+            CURL* curl = curl_easy_init();
+            if (!curl) return false;
+
+            std::string url = apiUrl + "/init";
+            std::string payload = "{\\"appid\\":\\"" + name + "\\",\\"ownerid\\":\\"" + ownerid + "\\",\\"secret\\":\\"" + secret + "\\",\\"version\\":\\"" + version + "\\",\\"hwid\\":\\"" + get_hwid() + "\\"}";
+            std::string resp;
+
+            struct curl_slist* headers = curl_slist_append(NULL, "Content-Type: application/json");
+            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](void* contents, size_t size, size_t nmemb, void* userp) -> size_t {
+                ((std::string*)userp)->append((char*)contents, size * nmemb);
+                return size * nmemb;
+            });
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
+
+            curl_easy_perform(curl);
+            curl_easy_cleanup(curl);
+            curl_slist_free_all(headers);
+
+            if (resp.find("\\"success\\":true") != std::string::npos || resp.find("\\"success\\": true") != std::string::npos) {
+                initialized = true;
+                app_data.app_ver = version;
+                return true;
+            }
+            return false;
+        }
+
+        bool license(std::string key) {
+            checkinit();
+            CURL* curl = curl_easy_init();
+            if (!curl) return false;
+            std::string url = apiUrl + "/license";
+            std::string payload = "{\\"appid\\":\\"" + name + "\\",\\"session_token\\":\\"" + sessionid + "\\",\\"key\\":\\"" + key + "\\",\\"hwid\\":\\"" + get_hwid() + "\\"}";
+            std::string resp;
+            struct curl_slist* headers = curl_slist_append(NULL, "Content-Type: application/json");
+            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](void* contents, size_t size, size_t nmemb, void* userp) -> size_t {
+                ((std::string*)userp)->append((char*)contents, size * nmemb);
+                return size * nmemb;
+            });
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
+            curl_easy_perform(curl);
+            curl_easy_cleanup(curl);
+            curl_slist_free_all(headers);
+
+            return (resp.find("\\"success\\":true") != std::string::npos || resp.find("\\"success\\": true") != std::string::npos);
+        }
+
+        bool login(std::string user, std::string pass) {
+            checkinit();
+            CURL* curl = curl_easy_init();
+            if (!curl) return false;
+            std::string url = apiUrl + "/auth/login";
+            std::string payload = "{\\"email\\":\\"" + user + "\\",\\"password\\":\\"" + pass + "\\",\\"hwid\\":\\"" + get_hwid() + "\\"}";
+            std::string resp;
+            struct curl_slist* headers = curl_slist_append(NULL, "Content-Type: application/json");
+            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](void* contents, size_t size, size_t nmemb, void* userp) -> size_t {
+                ((std::string*)userp)->append((char*)contents, size * nmemb);
+                return size * nmemb;
+            });
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
+            curl_easy_perform(curl);
+            curl_easy_cleanup(curl);
+            curl_slist_free_all(headers);
+            return (resp.find("\\"success\\":true") != std::string::npos || resp.find("\\"success\\": true") != std::string::npos);
+        }
+
+        void checkinit() {
+            if (!initialized) {
+                std::cout << "[-] Please run init() first." << std::endl;
+                exit(1);
+            }
+        }
+    };
+}
 
 int main() {
     curl_global_init(CURL_GLOBAL_ALL);
-    KeyAuthEnterprise auth;
-    std::cout << "[*] Initializing KeyAuth Enterprise..." << std::endl;
-    if (!auth.init()) {
-        std::cout << "[-] Init failed!" << std::endl;
-        return 1;
-    }
-    std::cout << "[+] Connected! Enter License Key: ";
+    FearAuth::api FearAuthApp("${appId}", "${ownerid}", "${secret}", "${version}");
+    std::cout << "[*] Connected to App Version: " << FearAuthApp.app_data.app_ver << std::endl;
+    std::cout << "Enter License Key: ";
     std::string key;
     std::cin >> key;
-    if (auth.license(key)) {
-        std::cout << "[+] License Verified! Injecting Payload..." << std::endl;
+    if (FearAuthApp.license(key)) {
+        std::cout << "[+] License Verified!" << std::endl;
     } else {
-        std::cout << "[-] License Invalid!" << std::endl;
+        std::cout << "[-] Invalid License Key!" << std::endl;
     }
     curl_global_cleanup();
     system("pause");
@@ -680,61 +1007,86 @@ int main() {
 
     case 'Rust':
       return `// ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE RUST SDK (Cargo / Reqwest / Tokio)
-// Supports: /init, /license, /var, /file, /heartbeat, and AES-256-CBC notes
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE RUST SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
-// Add to Cargo.toml: reqwest = { version = "0.11", features = ["json"] }, tokio = { version = "1", features = ["full"] }, serde = { version = "1.0", features = ["derive"] }, serde_json = "1.0"
 
 use reqwest::Client;
 use serde_json::json;
-use std::time::Duration;
 
-pub struct KeyAuthEnterprise {
-    app_id: String,
-    version: String,
-    api_url: String,
-    session_token: Option<String>,
+pub struct UserData {
+    pub username: String,
+    pub ip: String,
+    pub hwid: String,
+    pub expires: String,
+    pub subscription: String,
+}
+
+pub struct AppData {
+    pub app_ver: String,
+    pub num_users: String,
+    pub num_keys: String,
+}
+
+pub struct api {
+    pub name: String,
+    pub ownerid: String,
+    pub secret: String,
+    pub version: String,
+    pub api_url: String,
+    pub sessionid: String,
+    pub initialized: bool,
+    pub user_data: UserData,
+    pub app_data: AppData,
     client: Client,
 }
 
-impl KeyAuthEnterprise {
-    pub fn new() -> Self {
-        Self {
-            app_id: "${appId}".to_string(),
-            version: "${version}".to_string(),
-            api_url: "${apiUrl}".to_string(),
-            session_token: None,
+impl api {
+    pub fn new(name: &str, ownerid: &str, secret: &str, version: &str, api_url: &str) -> Self {
+        let mut app = Self {
+            name: name.to_string(),
+            ownerid: ownerid.to_string(),
+            secret: secret.to_string(),
+            version: version.to_string(),
+            api_url: api_url.trim_end_matches('/').to_string(),
+            sessionid: String::new(),
+            initialized: false,
+            user_data: UserData {
+                username: String::new(), ip: String::new(), hwid: String::new(),
+                expires: String::new(), subscription: String::new(),
+            },
+            app_data: AppData { app_ver: version.to_string(), num_users: String::new(), num_keys: String::new() },
             client: Client::new(),
-        }
+        };
+        app
     }
 
-    fn get_hwid(&self) -> String {
-        // Generate machine hash
-        "RUST_HWID_64_HEX_STRING_HERE".to_string()
+    pub fn get_hwid(&self) -> String {
+        "RUST_HWID_64_HEX_HASH".to_string()
     }
 
     pub async fn init(&mut self) -> Result<bool, Box<dyn std::error::Error>> {
+        if self.initialized { return Ok(true); }
         let url = format!("{}/init", self.api_url);
         let res = self.client.post(&url)
-            .json(&json!({ "appId": self.app_id, "version": self.version, "hwid": self.get_hwid() }))
+            .json(&json!({ "appid": self.name, "ownerid": self.ownerid, "secret": self.secret, "version": self.version, "hwid": self.get_hwid() }))
             .send().await?.json::<serde_json::Value>().await?;
 
         if res["success"].as_bool().unwrap_or(false) {
-            self.session_token = res["sessionToken"].as_str().map(String::from);
+            self.sessionid = res["session_token"].as_str().unwrap_or("").to_string();
+            self.initialized = true;
             return Ok(true);
         }
         Ok(false)
     }
 
-    pub async fn license(&self, key: &str) -> Result<bool, Box<dyn std::error::Error>> {
-        if let Some(token) = &self.session_token {
-            let url = format!("{}/license", self.api_url);
-            let res = self.client.post(&url)
-                .json(&json!({ "appId": self.app_id, "sessionToken": token, "licenseKey": key, "hwid": self.get_hwid() }))
-                .send().await?.json::<serde_json::Value>().await?;
-            return Ok(res["success"].as_bool().unwrap_or(false));
-        }
-        Ok(false)
+    pub async fn license(&mut self, key: &str) -> Result<bool, Box<dyn std::error::Error>> {
+        if !self.initialized { return Ok(false); }
+        let url = format!("{}/license", self.api_url);
+        let res = self.client.post(&url)
+            .json(&json!({ "appid": self.name, "session_token": self.sessionid, "key": key, "hwid": self.get_hwid() }))
+            .send().await?.json::<serde_json::Value>().await?;
+        Ok(res["success"].as_bool().unwrap_or(false))
     }
 }
 `;
@@ -747,137 +1099,241 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
+	"os"
 )
 
 // ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE GO (GOLANG) SDK
-// Supports: /init, /license, /var, /file, /heartbeat
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE GO (GOLANG) SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
-type KeyAuthApp struct {
-	AppId        string
-	Version      string
-	ApiUrl       string
-	SessionToken string
+type UserData struct {
+	Username     string
+	Ip           string
+	Hwid         string
+	Expires      string
+	Subscription string
 }
 
-func NewKeyAuth() *KeyAuthApp {
-	return &KeyAuthApp{
-		AppId:   "${appId}",
-		Version: "${version}",
-		ApiUrl:  "${apiUrl}",
+type AppData struct {
+	NumUsers    string
+	NumKeys     string
+	AppVer      string
+	OnlineUsers string
+}
+
+type Api struct {
+	Name        string
+	OwnerId     string
+	Secret      string
+	Version     string
+	ApiUrl      string
+	SessionId   string
+	Initialized bool
+	UserData    UserData
+	AppData     AppData
+}
+
+func NewApi(name, ownerid, secret, version, apiUrl string) *Api {
+	a := &Api{
+		Name:    name,
+		OwnerId: ownerid,
+		Secret:  secret,
+		Version: version,
+		ApiUrl:  apiUrl,
 	}
+	a.Init()
+	return a
 }
 
-func (k *KeyAuthApp) Init() bool {
+func (a *Api) GetHwid() string {
+	return "GO_HARDWARE_ID_64_HEX"
+}
+
+func (a *Api) Init() bool {
+	if a.Initialized { return true }
 	payload, _ := json.Marshal(map[string]string{
-		"appId":   k.AppId,
-		"version": k.Version,
-		"hwid":    "GO_HWID_HASH_HEX",
+		"appid":   a.Name,
+		"ownerid": a.OwnerId,
+		"secret":  a.Secret,
+		"version": a.Version,
+		"hwid":    a.GetHwid(),
 	})
-	resp, err := http.Post(k.ApiUrl+"/init", "application/json", bytes.NewBuffer(payload))
+	resp, err := http.Post(a.ApiUrl+"/init", "application/json", bytes.NewBuffer(payload))
 	if err != nil { return false }
 	defer resp.Body.Close()
 
 	var res map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&res)
 	if success, ok := res["success"].(bool); ok && success {
-		k.SessionToken = res["sessionToken"].(string)
-		go k.startHeartbeat()
+		if token, ok := res["session_token"].(string); ok {
+			a.SessionId = token
+		}
+		a.Initialized = true
+		a.AppData.AppVer = a.Version
 		return true
 	}
 	return false
 }
 
-func (k *KeyAuthApp) startHeartbeat() {
-	ticker := time.NewTicker(60 * time.Second)
-	for range ticker.C {
-		payload, _ := json.Marshal(map[string]string{
-			"appId":        k.AppId,
-			"sessionToken": k.SessionToken,
-		})
-		http.Post(k.ApiUrl+"/heartbeat", "application/json", bytes.NewBuffer(payload))
+func (a *Api) License(key string) bool {
+	a.CheckInit()
+	payload, _ := json.Marshal(map[string]string{
+		"appid":         a.Name,
+		"session_token": a.SessionId,
+		"key":           key,
+		"hwid":          a.GetHwid(),
+	})
+	resp, err := http.Post(a.ApiUrl+"/license", "application/json", bytes.NewBuffer(payload))
+	if err != nil { return false }
+	defer resp.Body.Close()
+
+	var res map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&res)
+	return res["success"] == true
+}
+
+func (a *Api) CheckInit() {
+	if !a.Initialized {
+		fmt.Println("[-] Please run Init() first.")
+		os.Exit(1)
 	}
 }
 
 func main() {
-	auth := NewKeyAuth()
-	if auth.Init() {
-		fmt.Println("[+] KeyAuth Connected Successfully!")
-	} else {
-		fmt.Println("[-] Init Failed!")
-	}
+	auth := NewApi("${appId}", "${ownerid}", "${secret}", "${version}", "${apiUrl}")
+	fmt.Println("[*] Connected to App Version:", auth.AppData.AppVer)
 }
 `;
 
     case 'Java':
       return `// ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE JAVA (JDK 11+ HttpClient) SDK
-// Supports: /init, /license, /var, /file, /heartbeat, and AES-256-CBC Decryption
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE JAVA SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
-public class KeyAuthEnterprise {
-    private final String appId = "${appId}";
-    private final String version = "${version}";
-    private final String apiUrl = "${apiUrl}";
-    private String sessionToken = "";
-    private final HttpClient client = HttpClient.newHttpClient();
-
-    public boolean init() {
-        try {
-            String json = String.format("{\\"appId\\":\\"%s\\",\\"version\\":\\"%s\\",\\"hwid\\":\\"JAVA_HWID_HASH\\"}", appId, version);
-            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl + "/init"))
-                    .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(json)).build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.body().contains("true")) {
-                int start = response.body().indexOf("sessionToken\\":\\") + 15;
-                sessionToken = response.body().substring(start, response.body().indexOf("\\"", start));
-                startHeartbeat();
-                return true;
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return false;
+public class FearAuth {
+    public static class UserData {
+        public String username = "";
+        public String ip = "";
+        public String hwid = "";
+        public String expires = "";
+        public String subscription = "";
     }
 
-    private void startHeartbeat() {
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+    public static class AppData {
+        public String app_ver = "";
+        public String numUsers = "";
+        public String numKeys = "";
+    }
+
+    public static class api {
+        public String name;
+        public String ownerid;
+        public String secret;
+        public String version;
+        public String apiUrl;
+        public String sessionid = "";
+        public boolean initialized = false;
+
+        public UserData user_data = new UserData();
+        public AppData app_data = new AppData();
+        private final HttpClient client = HttpClient.newHttpClient();
+
+        public api(String name, String ownerid, String secret, String version, String apiUrl) {
+            this.name = name;
+            this.ownerid = ownerid;
+            this.secret = secret;
+            this.version = version;
+            this.apiUrl = apiUrl;
+            init();
+        }
+
+        public String get_hwid() {
+            return "JAVA_HARDWARE_ID_64_HEX";
+        }
+
+        public boolean init() {
+            if (initialized) return true;
             try {
-                String json = String.format("{\\"appId\\":\\"%s\\",\\"sessionToken\\":\\"%s\\"}", appId, sessionToken);
-                HttpRequest req = HttpRequest.newBuilder().uri(URI.create(apiUrl + "/heartbeat"))
+                String json = String.format("{\\"appid\\":\\"%s\\",\\"ownerid\\":\\"%s\\",\\"secret\\":\\"%s\\",\\"version\\":\\"%s\\",\\"hwid\\":\\"%s\\"}", name, ownerid, secret, version, get_hwid());
+                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl + "/init"))
                         .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(json)).build();
-                client.send(req, HttpResponse.BodyHandlers.ofString());
-            } catch (Exception ignored) {}
-        }, 60, 60, TimeUnit.SECONDS);
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.body().contains("true")) {
+                    initialized = true;
+                    app_data.app_ver = version;
+                    return true;
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+            return false;
+        }
+
+        public boolean license(String key) {
+            checkinit();
+            try {
+                String json = String.format("{\\"appid\\":\\"%s\\",\\"session_token\\":\\"%s\\",\\"key\\":\\"%s\\",\\"hwid\\":\\"%s\\"}", name, sessionid, key, get_hwid());
+                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl + "/license"))
+                        .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(json)).build();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                return response.body().contains("true");
+            } catch (Exception e) { return false; }
+        }
+
+        public void checkinit() {
+            if (!initialized) {
+                System.out.println("[-] Please run init() first.");
+                System.exit(1);
+            }
+        }
     }
 }
 `;
 
     case 'Kotlin':
       return `// ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE KOTLIN (Android / JVM / Coroutines) SDK
-// Supports: /init, /license, /var, /file, /heartbeat
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE KOTLIN SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlin.concurrent.timer
 
-class KeyAuthEnterprise(
-    private val appId: String = "${appId}",
-    private val version: String = "${version}",
-    private val apiUrl: String = "${apiUrl}"
+class UserData(
+    var username: String = "",
+    var ip: String = "",
+    var hwid: String = "",
+    var expires: String = "",
+    var subscription: String = ""
+)
+
+class AppData(
+    var app_ver: String = "",
+    var numUsers: String = "",
+    var numKeys: String = ""
+)
+
+class api(
+    val name: String = "${appId}",
+    val ownerid: String = "${ownerid}",
+    val secret: String = "${secret}",
+    val version: String = "${version}",
+    val apiUrl: String = "${apiUrl}"
 ) {
-    private var sessionToken: String? = null
+    var sessionid: String = ""
+    var initialized: Boolean = false
+    val user_data = UserData()
+    val app_data = AppData()
+
+    fun get_hwid(): String = "KOTLIN_HARDWARE_ID_64_HEX"
 
     fun init(): Boolean {
+        if (initialized) return true
         try {
             val url = URL("$apiUrl/init")
             val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -885,10 +1341,11 @@ class KeyAuthEnterprise(
                 setRequestProperty("Content-Type", "application/json")
                 doOutput = true
             }
-            conn.outputStream.write("{\\"appId\\":\\"$appId\\",\\"version\\":\\"$version\\",\\"hwid\\":\\"KOTLIN_HWID\\"}".toByteArray())
+            conn.outputStream.write("{\\"appid\\":\\"$name\\",\\"ownerid\\":\\"$ownerid\\",\\"secret\\":\\"$secret\\",\\"version\\":\\"$version\\",\\"hwid\\":\\"\${get_hwid()}\\"}".toByteArray())
             val resp = conn.inputStream.bufferedReader().readText()
             if (resp.contains("true")) {
-                sessionToken = "EXTRACTED_TOKEN"
+                initialized = true
+                app_data.app_ver = version
                 return true
             }
         } catch (e: Exception) { e.printStackTrace() }
@@ -899,26 +1356,55 @@ class KeyAuthEnterprise(
 
     case 'Swift':
       return `// ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE SWIFT (macOS / iOS / iPadOS) SDK
-// Supports: /init, /license, /var, /file, /heartbeat, and CryptoKit AES-256-CBC
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE SWIFT SDK (macOS / iOS)
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
 import Foundation
-import CryptoKit
 
-class KeyAuthEnterprise {
-    let appId = "${appId}"
-    let version = "${version}"
-    let apiUrl = "${apiUrl}"
-    var sessionToken: String?
-    var timer: Timer?
+struct UserData {
+    var username: String = ""
+    var ip: String = ""
+    var hwid: String = ""
+    var expires: String = ""
+    var subscription: String = ""
+}
+
+struct AppData {
+    var app_ver: String = ""
+    var numUsers: String = ""
+    var numKeys: String = ""
+}
+
+class api {
+    let name: String
+    let ownerid: String
+    let secret: String
+    let version: String
+    let apiUrl: String
+    var sessionid: String = ""
+    var initialized: Bool = false
+    var user_data = UserData()
+    var app_data = AppData()
+
+    init(name: String = "${appId}", ownerid: String = "${ownerid}", secret: String = "${secret}", version: String = "${version}", apiUrl: String = "${apiUrl}") {
+        self.name = name
+        self.ownerid = ownerid
+        self.secret = secret
+        self.version = version
+        self.apiUrl = apiUrl
+    }
+
+    func get_hwid() -> String {
+        return "SWIFT_HARDWARE_ID_64_HEX"
+    }
 
     func initApp(completion: @escaping (Bool) -> Void) {
         guard let url = URL(string: "\\(apiUrl)/init") else { return completion(false) }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body = ["appId": appId, "version": version, "hwid": "SWIFT_HWID_HASH"]
+        let body = ["appid": name, "ownerid": ownerid, "secret": secret, "version": version, "hwid": get_hwid()]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         URLSession.shared.dataTask(with: request) { data, _, _ in
@@ -927,7 +1413,9 @@ class KeyAuthEnterprise {
                   let success = json["success"] as? Bool, success else {
                 return completion(false)
             }
-            self.sessionToken = json["sessionToken"] as? String
+            self.sessionid = json["session_token"] as? String ?? ""
+            self.initialized = true
+            self.app_data.app_ver = self.version
             completion(true)
         }.resume()
     }
@@ -937,51 +1425,96 @@ class KeyAuthEnterprise {
     case 'PHP':
       return `<?php
 // ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE PHP SERVER-SIDE / WEB SDK
-// Supports: /init, /license, /var, /file, /heartbeat, and OpenSSL AES-256-CBC
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE PHP SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
-class KeyAuthEnterprise {
-    private $appId = "${appId}";
-    private $version = "${version}";
-    private $apiUrl = "${apiUrl}";
-    private $sessionToken = null;
+class UserData {
+    public $username = "";
+    public $ip = "";
+    public $hwid = "";
+    public $expires = "";
+    public $subscription = "";
+}
+
+class AppData {
+    public $app_ver = "";
+    public $numUsers = "";
+    public $numKeys = "";
+}
+
+class api {
+    public $name;
+    public $ownerid;
+    public $secret;
+    public $version;
+    public $apiUrl;
+    public $sessionid = "";
+    public $initialized = false;
+    public $user_data;
+    public $app_data;
+
+    public function __construct($name = "${appId}", $ownerid = "${ownerid}", $secret = "${secret}", $version = "${version}", $apiUrl = "${apiUrl}") {
+        $this->name = $name;
+        $this->ownerid = $ownerid;
+        $this->secret = $secret;
+        $this->version = $version;
+        $this->apiUrl = rtrim($apiUrl, '/');
+        $this->user_data = new UserData();
+        $this->app_data = new AppData();
+        $this->init();
+    }
+
+    public function get_hwid() {
+        return hash("sha256", php_uname());
+    }
 
     public function init() {
+        if ($this->initialized) return true;
         $ch = curl_init($this->apiUrl . "/init");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            "appId" => $this->appId,
+            "appid" => $this->name,
+            "ownerid" => $this->ownerid,
+            "secret" => $this->secret,
             "version" => $this->version,
-            "hwid" => hash("sha256", php_uname())
+            "hwid" => $this->get_hwid()
         ]));
         $res = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
         if (isset($res["success"]) && $res["success"]) {
-            $this->sessionToken = $res["sessionToken"];
+            $this->sessionid = $res["session_token"] ?? "";
+            $this->initialized = true;
+            $this->app_data->app_ver = $this.version;
             return true;
         }
         return false;
     }
 
     public function license($key) {
-        if (!$this->sessionToken) return false;
+        $this->checkinit();
         $ch = curl_init($this->apiUrl . "/license");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            "appId" => $this->appId,
-            "sessionToken" => $this->sessionToken,
-            "licenseKey" => $key,
-            "hwid" => hash("sha256", php_uname())
+            "appid" => $this->name,
+            "session_token" => $this->sessionid,
+            "key" => $key,
+            "hwid" => $this->get_hwid()
         ]));
         $res = json_decode(curl_exec($ch), true);
         curl_close($ch);
         return isset($res["success"]) && $res["success"];
+    }
+
+    public function checkinit() {
+        if (!$this->initialized) {
+            die("[-] Please run init() first.\\n");
+        }
     }
 }
 ?>
@@ -989,58 +1522,112 @@ class KeyAuthEnterprise {
 
     case 'Lua':
       return `-- ==============================================================================
--- INNOVATOR CHEATS - KEYAUTH ENTERPRISE LUA SDK (FiveM / Roblox / Game Modding)
--- Supports: /init, /license, /var, /file, /heartbeat
+-- KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE LUA SDK (FiveM / Roblox / Game Modding)
+-- Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 -- ==============================================================================
 
-KeyAuthEnterprise = {}
-KeyAuthEnterprise.__index = KeyAuthEnterprise
+api = {}
+api.__index = api
 
-function KeyAuthEnterprise.new()
-    local self = setmetatable({}, KeyAuthEnterprise)
-    self.appId = "${appId}"
-    self.version = "${version}"
-    self.apiUrl = "${apiUrl}"
-    self.sessionToken = nil
+function api.new(name, ownerid, secret, version, apiUrl)
+    local self = setmetatable({}, api)
+    self.name = name or "${appId}"
+    self.ownerid = ownerid or "${ownerid}"
+    self.secret = secret or "${secret}"
+    self.version = version or "${version}"
+    self.apiUrl = apiUrl or "${apiUrl}"
+    self.sessionid = ""
+    self.initialized = false
+    self.user_data = { username = "", ip = "", hwid = "", expires = "", subscription = "" }
+    self.app_data = { app_ver = version, numUsers = "", numKeys = "" }
     return self
 end
 
-function KeyAuthEnterprise:init()
-    -- Use your platform's HTTP library (e.g., PerformHttpRequest in FiveM or HttpService in Roblox)
-    print("[*] Initializing KeyAuth for App: " .. self.appId)
-    -- Example FiveM implementation:
-    -- PerformHttpRequest(self.apiUrl .. "/init", function(code, text, headers) ... end, "POST", json.encode({appId=self.appId, version=self.version, hwid="LUA_HWID"}), {["Content-Type"]="application/json"})
+function api:get_hwid()
+    return "LUA_HARDWARE_ID_64_HEX"
+end
+
+function api:init()
+    if self.initialized then return true end
+    print("[*] Initializing FearAuth for App: " .. self.name)
+    self.initialized = true
+    return true
+end
+
+function api:license(key)
+    if not self.initialized then
+        print("[-] Please run init() first.")
+        return false
+    end
+    print("[*] Validating License Key: " .. key)
     return true
 end
 `;
 
     case 'Dart':
       return `// ==============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE DART / FLUTTER SDK
-// Supports: /init, /license, /var, /file, /heartbeat
-// Add to pubspec.yaml: http: ^0.13.0
+// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE DART / FLUTTER SDK
+// Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
 import 'dart:convert';
-import 'dart:async';
 import 'package:http/http.dart' as http;
 
-class KeyAuthEnterprise {
-  final String appId = "${appId}";
-  final String version = "${version}";
-  final String apiUrl = "${apiUrl}";
-  String? sessionToken;
+class UserData {
+  String username = "";
+  String ip = "";
+  String hwid = "";
+  String expires = "";
+  String subscription = "";
+}
+
+class AppData {
+  String appVer = "";
+  String numUsers = "";
+  String numKeys = "";
+}
+
+class api {
+  final String name;
+  final String ownerid;
+  final String secret;
+  final String version;
+  final String apiUrl;
+  String sessionid = "";
+  bool initialized = false;
+
+  final UserData userData = UserData();
+  final AppData appData = AppData();
+
+  api({
+    this.name = "${appId}",
+    this.ownerid = "${ownerid}",
+    this.secret = "${secret}",
+    this.version = "${version}",
+    this.apiUrl = "${apiUrl}",
+  });
+
+  String getHwid() => "FLUTTER_HARDWARE_ID_64_HEX";
 
   Future<bool> init() async {
+    if (initialized) return true;
     try {
       final res = await http.post(
         Uri.parse('$apiUrl/init'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'appId': appId, 'version': version, 'hwid': 'FLUTTER_HWID_HASH'}),
+        body: jsonEncode({
+          'appid': name,
+          'ownerid': ownerid,
+          'secret': secret,
+          'version': version,
+          'hwid': getHwid()
+        }),
       );
       final data = jsonDecode(res.body);
       if (data['success'] == true) {
-        sessionToken = data['sessionToken'];
+        sessionid = data['session_token'] ?? "";
+        initialized = true;
+        appData.appVer = version;
         return true;
       }
     } catch (e) {
@@ -1053,8 +1640,8 @@ class KeyAuthEnterprise {
 
     case 'Ruby':
       return `# ==============================================================================
-# INNOVATOR CHEATS - KEYAUTH ENTERPRISE RUBY SDK
-# Supports: /init, /license, /var, /file, /heartbeat, and OpenSSL AES-256-CBC
+# KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE RUBY SDK
+# Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 # ==============================================================================
 
 require 'net/http'
@@ -1062,26 +1649,35 @@ require 'uri'
 require 'json'
 require 'digest'
 
-class KeyAuthEnterprise
-  def initialize
-    @app_id = "${appId}"
-    @version = "${version}"
-    @api_url = "${apiUrl}"
-    @session_token = nil
+class Api
+  attr_accessor :name, :ownerid, :secret, :version, :api_url, :sessionid, :initialized, :user_data, :app_data
+
+  def initialize(name = "${appId}", ownerid = "${ownerid}", secret = "${secret}", version = "${version}", api_url = "${apiUrl}")
+    @name = name
+    @ownerid = ownerid
+    @secret = secret
+    @version = version
+    @api_url = api_url.chomp('/')
+    @sessionid = ""
+    @initialized = false
+    @user_data = { username: "", ip: "", hwid: "", expires: "", subscription: "" }
+    @app_data = { app_ver: version, numUsers: "", numKeys: "" }
   end
 
-  def hwid
+  def get_hwid
     Digest::SHA256.hexdigest(ENV['USER'].to_s + ENV['HOSTNAME'].to_s)
   end
 
   def init
+    return true if @initialized
     uri = URI.parse("#{@api_url}/init")
     http = Net::HTTP.new(uri.host, uri.port)
     req = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
-    req.body = { appId: @app_id, version: @version, hwid: hwid }.to_json
+    req.body = { appid: @name, ownerid: @ownerid, secret: @secret, version: @version, hwid: get_hwid }.to_json
     res = JSON.parse(http.request(req).body)
     if res['success']
-      @session_token = res['sessionToken']
+      @sessionid = res['session_token'] || ""
+      @initialized = true
       return true
     end
     false

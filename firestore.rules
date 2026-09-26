@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Check if user is logged in via Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Applications Collection (fixes "Permission denied" error)
+    match /applications/{appId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Licenses / Key Management
+    match /licenses/{licenseId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Plans / Subscriptions
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Webhooks
+    match /webhooks/{webhookId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // API Activity Logs
+    match /api_logs/{logId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // HWID Resets
+    match /hwid_resets/{resetId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Resellers Management
+    match /resellers/{resellerId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Cloud Variables
+    match /cloud_vars/{varId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Cloud Files
+    match /cloud_files/{fileId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Blacklist System
+    match /blacklists/{blacklistId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Registered App Users
+    match /app_users/{appUserId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
