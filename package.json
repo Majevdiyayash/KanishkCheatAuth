@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "client:dev": "vite",
     "server:dev": "tsx watch server/index.ts",
@@ -27,10 +30,14 @@
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "tsx": "^4.22.5"
+    "tsx": "^4.22.5",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1",
+    "@tailwindcss/vite": "^4.3.2",
+    "tailwindcss": "^4.3.2",
+    "@vitejs/plugin-react": "^6.0.3"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/canvas-confetti": "^1.9.0",
     "@types/cors": "^2.8.19",
@@ -39,14 +46,9 @@
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
     "concurrently": "^10.0.3",
     "nodemon": "^3.1.14",
     "oxlint": "^1.71.0",
-    "tailwindcss": "^4.3.2",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.22.5",
-    "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "ts-node": "^10.9.2"
   }
 }
