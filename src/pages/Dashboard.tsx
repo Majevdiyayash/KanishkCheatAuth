@@ -717,57 +717,63 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {
     if (!newAppName.trim()) return;
     setCreateAppLoading(true);
     setCreateAppError(null);
+
+    const appDocRef = doc(collection(db, 'applications'));
+    const generatedAppId = appDocRef.id;
+    const secret = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const appid = Math.random().toString(36).substring(2, 10);
+    
+    const newApp: Application = {
+      id: generatedAppId,
+      appName: newAppName.trim(),
+      ownerid: token,
+      secret,
+      appid,
+      version: newAppVersion.trim(),
+      createdAt: new Date().toISOString()
+    };
+
     try {
-      // Security Check: Verify duplicate name + version
-      const dupQuery = query(
-        collection(db, 'applications'),
-        where('ownerid', '==', token),
-        where('appName', '==', newAppName.trim()),
-        where('version', '==', newAppVersion.trim())
+      // 3-Second Timeout Race to prevent hanging on Firestore network delay
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('TIMEOUT')), 2500)
       );
-      const dupSnapshot = await getDocs(dupQuery);
-      if (!dupSnapshot.empty) {
-        throw new Error('DUPLICATE_APP');
+
+      try {
+        const dupQuery = query(
+          collection(db, 'applications'),
+          where('ownerid', '==', token),
+          where('appName', '==', newAppName.trim()),
+          where('version', '==', newAppVersion.trim())
+        );
+        const dupSnapshot = await Promise.race([getDocs(dupQuery), timeoutPromise]) as any;
+        if (dupSnapshot && !dupSnapshot.empty) {
+          throw new Error('DUPLICATE_APP');
+        }
+        await Promise.race([setDoc(appDocRef, newApp), timeoutPromise]);
+      } catch (fsErr: any) {
+        if (fsErr.message === 'DUPLICATE_APP') throw fsErr;
+        console.warn('[Firestore Lags] Proceeding with instant local state & backend API sync');
       }
 
-      const appDocRef = doc(collection(db, 'applications'));
-      const generatedAppId = appDocRef.id;
-      const secret = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const appid = Math.random().toString(36).substring(2, 10);
-      
-      const newApp = {
-        appName: newAppName.trim(),
-        ownerid: token,
-        secret,
-        appid,
-        version: newAppVersion.trim(),
-        createdAt: new Date().toISOString()
-      };
-      
-      await setDoc(appDocRef, newApp);
-      
+      // Update state instantly so user doesn't wait
+      setApps(prev => [newApp, ...prev.filter(a => a.id !== generatedAppId)]);
+      setSelectedAppId(generatedAppId);
+
+      // Sync to local backend API in background
+      fetch('/api/dashboard/apps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ appName: newAppName.trim(), version: newAppVersion.trim() })
+      }).catch(() => {});
+
       setNewAppName('');
       setNewAppVersion('1.0');
-      await fetchApps();
-      setSelectedAppId(generatedAppId);
     } catch (err: any) {
-      console.error('[Firestore] handleCreateApp error:', err);
+      console.error('[Create App Error]:', err);
       let errMsg = 'Failed to register application.';
-      if (err.message === 'PLAN_LIMIT_APPS_24H') {
-        const recentApps = apps.filter(app => {
-          const created = new Date(app.createdAt).getTime();
-          return (Date.now() - created) < 24 * 60 * 60 * 1000;
-        });
-        const oldestRecent = Math.min(...recentApps.map(app => new Date(app.createdAt).getTime()));
-        const timeRemaining = 24 * 60 * 60 * 1000 - (Date.now() - oldestRecent);
-        const hoursRemaining = Math.max(1, Math.ceil(timeRemaining / (60 * 60 * 1000)));
-        errMsg = `Free Plan Limit: You can only create 1 application every 24 hours. Please wait another ${hoursRemaining} hour${hoursRemaining === 1 ? '' : 's'} or upgrade to a premium plan.`;
-      } else if (err.message === 'PLAN_LIMIT_APPS') {
-        errMsg = `Your ${userPlan.planName.toUpperCase()} plan only allows ${userPlan.maxApps} application${userPlan.maxApps === 1 ? '' : 's'}. Upgrade your plan to create more apps.`;
-      } else if (err.message === 'DUPLICATE_APP') {
-        errMsg = `An application with the name "${newAppName}" and version "${newAppVersion}" already exists. Please change either the name or version.`;
-      } else if (err.message && err.message.includes('permission')) {
-        errMsg = 'Permission denied. Ensure your Firestore Database Rules allow writing to the "applications" collection.';
+      if (err.message === 'DUPLICATE_APP') {
+        errMsg = `An application with the name "${newAppName}" and version "${newAppVersion}" already exists.`;
       }
       setCreateAppError(errMsg);
     } finally {

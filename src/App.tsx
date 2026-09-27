@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Key, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Key, BookOpen, Loader2 } from 'lucide-react';
 import { CursorGlow } from './components/CursorGlow';
-import { Dashboard } from './pages/Dashboard';
-import { Docs } from './pages/Docs';
-import { Premium } from './pages/Premium';
-import { AdminPanel } from './pages/AdminPanel';
 import { DexterAuthModal } from './components/DexterAuthModal';
 import { CloudShieldGatekeeper } from './components/CloudShieldGatekeeper';
+
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Docs = lazy(() => import('./pages/Docs').then(m => ({ default: m.Docs })));
+const Premium = lazy(() => import('./pages/Premium').then(m => ({ default: m.Premium })));
+const AdminPanel = lazy(() => import('./pages/AdminPanel').then(m => ({ default: m.AdminPanel })));
 
 // Firebase imports
 import { auth, googleProvider, db } from './lib/firebase';
@@ -300,7 +301,13 @@ function App() {
 
       {/* Screen Render Engine */}
       <main className={currentPage !== 'dashboard' && currentPage !== 'home' && currentPage !== 'login' && currentPage !== 'register' ? 'pt-20' : ''}>
-        <AnimatePresence mode="wait">
+        <Suspense fallback={
+          <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-3">
+            <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+            <span className="text-xs text-gray-400 font-mono tracking-widest">LOADING MODULE...</span>
+          </div>
+        }>
+          <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
             initial={{ opacity: 0 }}
@@ -357,6 +364,7 @@ function App() {
             )}
           </motion.div>
         </AnimatePresence>
+        </Suspense>
       </main>
     </div>
   );
