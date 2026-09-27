@@ -132,7 +132,16 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
 
   // App context
   const [apps, setApps] = useState<Application[]>([]);
-  const [selectedAppId, setSelectedAppId] = useState<string>('');
+  const [selectedAppId, setSelectedAppId] = useState<string>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('kc_selected_appid') || '' : '';
+  });
+
+  const changeSelectedAppId = (id: string) => {
+    setSelectedAppId(id);
+    if (id && typeof window !== 'undefined') {
+      try { localStorage.setItem('kc_selected_appid', id); } catch (e) {}
+    }
+  };
   
   // Stats & listings
   const [stats, setStats] = useState({ totalKeys: 0, activeKeys: 0, boundDevices: 0, totalResets: 0 });
@@ -228,9 +237,6 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
     }
   };
 
-const DEFAULT_STATIC_APPS: Application[] = [];
-
-const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
 
   // Load applications directly from Firestore + Backend API + LocalStorage Persistent Cache
   const fetchApps = async () => {
@@ -238,21 +244,25 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
       const appsList: Application[] = [];
       const seenIds = new Set<string>();
 
-      // 1. Fetch from Firestore
+      const addApp = (a: Application) => {
+        if (!a || !a.id || seenIds.has(a.id)) return;
+        seenIds.add(a.id);
+        appsList.push(a);
+      };
+
+      // 1. Fetch from LocalStorage persistent cache (All + Global + Token specific)
       try {
-        const q = query(collection(db, 'applications'));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          const appObj: Application = { id: docSnap.id, ...data } as Application;
-          if (!seenIds.has(appObj.id)) {
-            seenIds.add(appObj.id);
-            appsList.push(appObj);
-          }
-        });
-      } catch (e) {
-        console.warn('[Firestore] fetchApps warning:', e);
-      }
+        const allSaved = localStorage.getItem('kc_all_created_apps');
+        if (allSaved) JSON.parse(allSaved).forEach(addApp);
+
+        const globalSaved = localStorage.getItem('kc_global_user_apps');
+        if (globalSaved) JSON.parse(globalSaved).forEach(addApp);
+
+        if (token) {
+          const userSaved = localStorage.getItem(`kc_user_apps_${token}`);
+          if (userSaved) JSON.parse(userSaved).forEach(addApp);
+        }
+      } catch (e) {}
 
       // 2. Fetch from Backend API
       try {
@@ -262,53 +272,35 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.applications)) {
-            data.applications.forEach((a: any) => {
-              if (!seenIds.has(a.id)) {
-                seenIds.add(a.id);
-                appsList.push(a);
-              }
-            });
+            data.applications.forEach(addApp);
           }
         }
       } catch (e) {}
 
-      // 3. Fetch from LocalStorage persistent cache (Global + Token specific)
+      // 3. Fetch from Firestore
       try {
-        const globalSaved = localStorage.getItem('kc_global_user_apps');
-        if (globalSaved) {
-          const parsed: Application[] = JSON.parse(globalSaved);
-          parsed.forEach(a => {
-            if (!seenIds.has(a.id)) {
-              seenIds.add(a.id);
-              appsList.push(a);
-            }
-          });
-        }
-        if (token) {
-          const localSaved = localStorage.getItem(`kc_user_apps_${token}`);
-          if (localSaved) {
-            const parsed: Application[] = JSON.parse(localSaved);
-            parsed.forEach(a => {
-              if (!seenIds.has(a.id)) {
-                seenIds.add(a.id);
-                appsList.push(a);
-              }
-            });
-          }
-        }
-      } catch (e) {}
+        const q = query(collection(db, 'applications'));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((docSnap) => {
+          addApp({ id: docSnap.id, ...docSnap.data() } as Application);
+        });
+      } catch (e) {
+        console.warn('[Firestore] fetchApps warning:', e);
+      }
 
       if (appsList.length > 0) {
         setApps(appsList);
-        if (!selectedAppId) setSelectedAppId(appsList[0].id);
+        const savedId = localStorage.getItem('kc_selected_appid');
+        if (savedId && appsList.some(a => a.id === savedId)) {
+          changeSelectedAppId(savedId);
+        } else if (!selectedAppId || !appsList.some(a => a.id === selectedAppId)) {
+          changeSelectedAppId(appsList[0].id);
+        }
       } else {
-        setApps(DEFAULT_STATIC_APPS);
-        if (!selectedAppId && DEFAULT_STATIC_APPS.length > 0) setSelectedAppId(DEFAULT_STATIC_APPS[0].id);
+        setApps([]);
       }
     } catch (err) {
       console.error('[Firestore] fetchApps error:', err);
-      setApps(DEFAULT_STATIC_APPS);
-      if (!selectedAppId && DEFAULT_STATIC_APPS.length > 0) setSelectedAppId(DEFAULT_STATIC_APPS[0].id);
     }
   };
 
@@ -333,10 +325,6 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
       });
     } catch (e) {
       console.warn('[Firestore] Failed to fetch licenses:', e);
-    }
-
-    if (licList.length === 0) {
-      licList = DEFAULT_STATIC_LICENSES[selectedAppId] || DEFAULT_STATIC_LICENSES['app_kanishk_apex_01'] || [];
     }
 
     total = licList.length;
