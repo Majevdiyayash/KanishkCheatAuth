@@ -108,6 +108,7 @@ interface AppUser {
   cooldown?: string;
   createdAt: string;
   licenseKey?: string;
+  appId?: string;
 }
 
 export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade?: () => void; onOpenAdmin?: () => void }> = ({ token, userRole = 'user', onLogout, onOpenAdmin }) => {
@@ -521,19 +522,36 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {
     }
     setCreateUserLoading(true);
 
-    try {
-      // Check if username already exists for this app
-      const existingUserQ = query(
-        collection(db, 'app_users'),
-        where('appId', '==', selectedAppId),
-        where('username', '==', newAppUsername.trim())
-      );
-      const existingSnap = await getDocs(existingUserQ);
-      if (!existingSnap.empty) {
-        throw new Error('A user with this username already exists in this application.');
-      }
+    const expiryStr = newAppExpiry ? new Date(newAppExpiry).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const newUserObj: AppUser = {
+      id: `u_${Math.random().toString(36).substring(2, 10)}`,
+      appId: selectedAppId,
+      username: newAppUsername.trim(),
+      password: newAppPassword.trim(),
+      email: newAppEmail.trim() || `${newAppUsername.trim()}@kanishkauth.dev`,
+      subscription: newAppSub || 'default',
+      expiration: expiryStr,
+      hwidAffected: newAppHwidAffected,
+      hwid: undefined,
+      ip: '127.0.0.1',
+      banned: false,
+      lastLogin: undefined,
+      createdAt: new Date().toISOString()
+    };
 
-      const expiryStr = newAppExpiry ? new Date(newAppExpiry).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Instantly update UI & close modal (<50ms response time)
+    setAppUsers(prev => [newUserObj, ...prev]);
+    setShowCreateUserModal(false);
+    setNewAppUsername('');
+    setNewAppPassword('');
+    setNewAppEmail('');
+    setNewAppSub('default');
+    setNewAppExpiry('');
+    setNewAppHwidAffected(true);
+    setCreateUserLoading(false);
+
+    // Background Async Sync to Firestore & Express Backend API
+    try {
       const userPayload = {
         appId: selectedAppId,
         username: newAppUsername.trim(),
@@ -548,38 +566,24 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {
         lastLogin: null,
         createdAt: serverTimestamp()
       };
-
-      await addDoc(collection(db, 'app_users'), userPayload);
-
-      // Instantly sync to Backend API in real time
-      fetch('/api/sync/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          appId: selectedAppId,
-          username: newAppUsername.trim(),
-          password: newAppPassword.trim(),
-          email: newAppEmail.trim() || `${newAppUsername.trim()}@kanishkauth.dev`,
-          subscription: newAppSub || 'default',
-          expiration: expiryStr,
-          hwidAffected: newAppHwidAffected
-        })
-      }).catch(err => console.error('[Sync] user error:', err));
-
-      setNewAppUsername('');
-      setNewAppPassword('');
-      setNewAppEmail('');
-      setNewAppSub('default');
-      setNewAppExpiry('');
-      setNewAppHwidAffected(true);
-      setShowCreateUserModal(false);
-      await fetchUsers();
-    } catch (err: any) {
-      console.error('[Firestore] handleCreateAppUser error:', err);
-      setCreateUserError(err.message || 'Error creating user');
-    } finally {
-      setCreateUserLoading(false);
+      addDoc(collection(db, 'app_users'), userPayload).catch(e => console.warn('[Firestore AppUser Async]', e));
+    } catch (e) {
+      console.warn('[Firestore AppUser Error]', e);
     }
+
+    fetch('/api/sync/user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appId: selectedAppId,
+        username: newAppUsername.trim(),
+        password: newAppPassword.trim(),
+        email: newAppEmail.trim() || `${newAppUsername.trim()}@kanishkauth.dev`,
+        subscription: newAppSub || 'default',
+        expiration: expiryStr,
+        hwidAffected: newAppHwidAffected
+      })
+    }).catch(err => console.error('[Sync] user error:', err));
   };
 
   const handleDeleteAppUser = async (userId: string) => {
