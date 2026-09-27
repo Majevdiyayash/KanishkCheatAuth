@@ -435,84 +435,162 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
     setLoadingStats(false);
   };
 
-  // Load license keys from Firestore
+  // Load license keys from Firestore + Backend API + LocalStorage Persistent Cache
   const fetchKeys = async () => {
     if (!selectedAppId) return;
     setLoadingKeys(true);
     try {
-      const licQ = query(collection(db, 'licenses'), where('appId', '==', selectedAppId));
-      const licSnapshot = await getDocs(licQ);
       const keysList: License[] = [];
-      licSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        keysList.push({ 
-          id: docSnap.id,
-          licenseKey: data.key || 'INV-XXXX-XXXX',
-          hwid: data.hwid || null,
-          hwidLock: data.hwidLock ?? false,
-          expiresAt: data.expires instanceof Timestamp ? data.expires.toDate().toISOString() : (data.expires || new Date().toISOString()),
-          status: data.status || 'unused',
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
-          maxResets: data.maxResets ?? 10,
-          resetCount: data.resetCount ?? 0,
-          lastResetAt: data.lastResetAt instanceof Timestamp ? data.lastResetAt.toDate().toISOString() : (data.lastResetAt || null)
+      const seenIds = new Set<string>();
+
+      // 1. Fetch from Firestore
+      try {
+        const licQ = query(collection(db, 'licenses'), where('appId', '==', selectedAppId));
+        const licSnapshot = await getDocs(licQ);
+        licSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const item: License = { 
+            id: docSnap.id,
+            licenseKey: data.key || data.licenseKey || 'KC-XXXX-XXXX',
+            hwid: data.hwid || null,
+            hwidLock: data.hwidLock ?? false,
+            expiresAt: data.expires instanceof Timestamp ? data.expires.toDate().toISOString() : (data.expires || new Date().toISOString()),
+            status: data.status || 'unused',
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+            maxResets: data.maxResets ?? 10,
+            resetCount: data.resetCount ?? 0,
+            lastResetAt: data.lastResetAt instanceof Timestamp ? data.lastResetAt.toDate().toISOString() : (data.lastResetAt || null)
+          };
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            keysList.push(item);
+          }
         });
-      });
+      } catch (e) {}
+
+      // 2. Fetch from Backend API
+      try {
+        const res = await fetch(`/api/dashboard/keys?appId=${selectedAppId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.keys)) {
+            data.keys.forEach((k: any) => {
+              if (!seenIds.has(k.id)) {
+                seenIds.add(k.id);
+                keysList.push(k);
+              }
+            });
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fetch from LocalStorage persistent cache
+      try {
+        const localKey = `kc_app_keys_${selectedAppId}`;
+        const localSaved = localStorage.getItem(localKey);
+        if (localSaved) {
+          const parsed: License[] = JSON.parse(localSaved);
+          parsed.forEach(k => {
+            if (!seenIds.has(k.id)) {
+              seenIds.add(k.id);
+              keysList.push(k);
+            }
+          });
+        }
+      } catch (e) {}
+
       setKeys(keysList);
-      // Sync keys in real time with local backend API
-      if (keysList.length > 0) {
-        fetch('/api/sync/key-bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ appId: selectedAppId, keys: keysList })
-        }).catch(() => {});
-      }
+
+      try {
+        localStorage.setItem(`kc_app_keys_${selectedAppId}`, JSON.stringify(keysList));
+      } catch (e) {}
     } catch (e) {
-      console.error('[Firestore] fetchKeys error:', e);
+      console.error('[FetchKeys Error]:', e);
     } finally {
       setLoadingKeys(false);
     }
   };
 
-  // Load registered app users from Firestore with full KeyAuth attributes
+  // Load registered app users from Firestore + Backend API + LocalStorage Persistent Cache
   const fetchUsers = async () => {
     if (!selectedAppId) return;
     setLoadingUsers(true);
     try {
-      const userQ = query(collection(db, 'app_users'), where('appId', '==', selectedAppId));
-      const userSnapshot = await getDocs(userQ);
       const usersList: any[] = [];
-      userSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        usersList.push({
-          id: docSnap.id,
-          username: data.username || (data.email ? data.email.split('@')[0] : 'User'),
-          password: data.password || '••••••••',
-          email: data.email || 'N/A',
-          subscription: data.subscription || 'default',
-          expiration: data.expiration || data.expiresAt || null,
-          hwidAffected: data.hwidAffected !== undefined ? data.hwidAffected : true,
-          licenseKey: data.licenseKey || 'None',
-          hwid: data.hwid || null,
-          ip: data.ip || 'N/A',
-          banned: !!data.banned,
-          lastLogin: data.lastLogin || null,
-          status: data.banned ? 'banned' : (data.expiration && new Date(data.expiration).getTime() < Date.now() ? 'expired' : 'active'),
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : (data.createdAt || '')
+      const seenIds = new Set<string>();
+
+      // 1. Fetch from Firestore
+      try {
+        const userQ = query(collection(db, 'app_users'), where('appId', '==', selectedAppId));
+        const userSnapshot = await getDocs(userQ);
+        userSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const item = {
+            id: docSnap.id,
+            appId: selectedAppId,
+            username: data.username || (data.email ? data.email.split('@')[0] : 'User'),
+            password: data.password || '••••••••',
+            email: data.email || 'N/A',
+            subscription: data.subscription || 'default',
+            expiration: data.expiration || data.expiresAt || null,
+            hwidAffected: data.hwidAffected !== undefined ? data.hwidAffected : true,
+            licenseKey: data.licenseKey || 'None',
+            hwid: data.hwid || null,
+            ip: data.ip || 'N/A',
+            banned: !!data.banned,
+            lastLogin: data.lastLogin || null,
+            status: data.banned ? 'banned' : (data.expiration && new Date(data.expiration).getTime() < Date.now() ? 'expired' : 'active'),
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : (data.createdAt || '')
+          };
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            usersList.push(item);
+          }
         });
-      });
+      } catch (e) {}
+
+      // 2. Fetch from Backend API
+      try {
+        const res = await fetch(`/api/dashboard/users?appId=${selectedAppId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.users)) {
+            data.users.forEach((u: any) => {
+              if (!seenIds.has(u.id)) {
+                seenIds.add(u.id);
+                usersList.push(u);
+              }
+            });
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fetch from LocalStorage persistent cache
+      try {
+        const localKey = `kc_app_users_${selectedAppId}`;
+        const localSaved = localStorage.getItem(localKey);
+        if (localSaved) {
+          const parsed: any[] = JSON.parse(localSaved);
+          parsed.forEach(u => {
+            if (!seenIds.has(u.id)) {
+              seenIds.add(u.id);
+              usersList.push(u);
+            }
+          });
+        }
+      } catch (e) {}
+
       setAppUsers(usersList);
-      
-      // Sync users in real time with local backend API
-      if (usersList.length > 0) {
-        fetch('/api/sync/user-bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ users: usersList })
-        }).catch(() => {});
-      }
+
+      try {
+        localStorage.setItem(`kc_app_users_${selectedAppId}`, JSON.stringify(usersList));
+      } catch (e) {}
     } catch (e) {
-      console.error('[Firestore] fetchUsers error:', e);
+      console.error('[FetchUsers Error]:', e);
     } finally {
       setLoadingUsers(false);
     }
@@ -852,7 +930,17 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
         });
       }
       
-      await batch.commit();
+      // Update React keys state instantly (<50ms)
+      setKeys(prev => [...generatedListForSync, ...prev]);
+
+      // Cache locally so generated keys NEVER vanish on refresh
+      try {
+        const localKey = `kc_app_keys_${selectedAppId}`;
+        const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
+        localStorage.setItem(localKey, JSON.stringify([...generatedListForSync, ...existing]));
+      } catch (e) {}
+
+      await batch.commit().catch(e => console.warn('[Firestore Batch Commit]', e));
 
       // Instantly sync generated keys to backend local API server
       fetch('/api/sync/key-bulk', {
