@@ -146,7 +146,7 @@ function startDiscordBot() {
         }
 
         const embed = new EmbedBuilder()
-          .setTitle('🛡️ INNOVATOR CHEATS — Registered Applications')
+          .setTitle('🛡️ KANISHK CHEATS — Registered Applications')
           .setColor(0x00f0ff)
           .setTimestamp();
 
@@ -218,7 +218,7 @@ function startDiscordBot() {
             { name: 'Duration', value: `\`${expiryDays} Days\``, inline: true },
             { name: 'Keys List', value: `\`\`\`\n${generatedKeys.join('\n')}\n\`\`\``, inline: false }
           )
-          .setFooter({ text: 'INNOVATOR CHEATS Key Auth System' })
+          .setFooter({ text: 'KANISHK CHEATS Key Auth System' })
           .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });
@@ -249,7 +249,7 @@ function startDiscordBot() {
             { name: 'Bound Devices (HWID)', value: `\`${boundDevices}\``, inline: true },
             { name: 'Total HWID Resets', value: `\`${totalResets}\``, inline: true }
           )
-          .setFooter({ text: 'INNOVATOR CHEATS Console' })
+          .setFooter({ text: 'KANISHK CHEATS Console' })
           .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });

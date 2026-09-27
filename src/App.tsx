@@ -191,7 +191,7 @@ function App() {
     setAuthLoading(true);
 
     try {
-      const discordEmail = 'discord.creator@innovator.dev';
+      const discordEmail = 'discord.creator@kanishkcheat.dev';
       const discordPass = 'DiscordSecureAuth2026!';
 
       let firebaseUser;
@@ -255,7 +255,7 @@ function App() {
               <span>Docs</span>
             </button>
             
-            {token && (auth.currentUser?.email?.toLowerCase() === 'yashmajevadiya456@gmail.com' || auth.currentUser?.email?.toLowerCase().includes('innovatorcheats') || token === 'o08jDiopRZWaPffBCQGFCHFyhH83' || userRole === 'admin' || userRole === 'owner') && (
+            {token && (auth.currentUser?.email?.toLowerCase() === 'yashmajevadiya456@gmail.com' || auth.currentUser?.email?.toLowerCase().includes('kanishkcheats') || token === 'o08jDiopRZWaPffBCQGFCHFyhH83' || userRole === 'admin' || userRole === 'owner') && (
               <button 
                 onClick={() => setCurrentPage('admin')}
                 className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 hover:text-white transition-all flex items-center space-x-1.5 shadow-[0_0_15px_rgba(168,85,247,0.2)] cursor-pointer"

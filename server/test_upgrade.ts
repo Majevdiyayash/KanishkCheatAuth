@@ -3,7 +3,7 @@ import { FirestoreDB } from './firebase_admin.js';
 import { getSdkCode, sdkLanguages } from '../src/utils/sdkTemplates.js';
 
 // ============================================================================
-// INNOVATOR CHEATS - KEYAUTH ENTERPRISE AUTOMATED VERIFICATION TEST SUITE
+// KANISHK CHEATS - KEYAUTH ENTERPRISE AUTOMATED VERIFICATION TEST SUITE
 // ============================================================================
 
 console.log('====================================================================');
@@ -31,7 +31,7 @@ try {
   const iv = crypto.randomBytes(16);        // 128-bit IV
   
   const originalPayload = JSON.stringify({
-    appId: 'INNOVATOR_APP_001',
+    appId: 'KANISHK CHEAT_APP_001',
     sessionToken: 'token_secret_live_998877',
     hwid: '3F88-A90B-112C-5544',
     expiresAt: Date.now() + 3600000
@@ -56,10 +56,10 @@ try {
 // 2. Test HMAC-SHA256 Webhook Signature Verification
 console.log('\n--- Test Group 2: Webhook Signature HMAC Security ---');
 try {
-  const webhookSecret = 'whsec_enterprise_innovator_secret_2026';
+  const webhookSecret = 'whsec_enterprise_kanishkcheat_secret_2026';
   const eventPayload = JSON.stringify({
     event: 'license.activated',
-    appId: 'INNOVATOR_APP_001',
+    appId: 'KANISHK CHEAT_APP_001',
     licenseKey: 'INNOV-8899-AABB-CCDD',
     timestamp: new Date().toISOString()
   });
@@ -103,12 +103,12 @@ console.log('\n--- Test Group 4: Client SDK Generators (15 Multi-Platform Langua
 try {
   const mockApp = {
     id: 'APP_TEST_12345',
-    appName: 'Innovator Cheats Enterprise',
+    appName: 'Kanishk Cheats Enterprise',
     ownerid: 'OWNER_998877',
     secret: 'secret_app_key',
     appid: 'APP_TEST_12345',
     version: '2.5.0',
-    apiUrl: 'https://keyauth.innovatorcheats.dev/api'
+    apiUrl: 'https://keyauth.kanishkcheats.dev/api'
   };
 
   assertTest('SDK Language Array Contains Exactly 15 Supported Platforms', sdkLanguages.length === 15);

@@ -13,7 +13,7 @@ import './discord_bot';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'innovator_cheats_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'kanishkcheat_cheats_super_secret_jwt_key_2026';
 
 // ============================================================================
 // CRYPTOGRAPHIC SECURITY HELPERS (AES-256-CBC)
@@ -49,7 +49,7 @@ async function seedDatabase() {
       const passwordHash = bcrypt.hashSync('admin123', salt);
       const demoUser: User = {
         id: 'usr_seed',
-        email: 'creator@inovaaters.com',
+        email: 'creator@kanishkcheat.com',
         passwordHash,
         createdAt: new Date().toISOString(),
         plan: 'premium'
@@ -86,7 +86,7 @@ async function seedDatabase() {
       };
       await db.insert('licenses', demoLicense);
       
-      console.log('[Seeding] Seeding complete! Login: creator@inovaaters.com / admin123 | License: KC-DEMO-KEY-1234');
+      console.log('[Seeding] Seeding complete! Login: creator@kanishkcheat.com / admin123 | License: KC-DEMO-KEY-1234');
     }
   } catch (err) {
     console.error('[Seeding Error]', err);
@@ -129,8 +129,8 @@ async function triggerWebhook(appId: string, event: string, payload: any) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Inovaaters-Signature': crypto.createHmac('sha256', hook.secret).update(JSON.stringify(payload)).digest('hex'),
-          'X-Inovaaters-Event': event
+          'X-KanishkCheat-Signature': crypto.createHmac('sha256', hook.secret).update(JSON.stringify(payload)).digest('hex'),
+          'X-KanishkCheat-Event': event
         },
         body: JSON.stringify(payload)
       }).catch(err => {
@@ -640,7 +640,7 @@ app.post('/api/dashboard/users', authenticateDashboard as any, async (req: AuthR
     id: `appusr_${crypto.randomUUID().substring(0, 8)}`,
     appId,
     username: username.trim(),
-    email: email ? email.trim() : `${username}@inovaaters.dev`,
+    email: email ? email.trim() : `${username}@kanishkcheat.dev`,
     passwordHash,
     subscription: subscription || 'default',
     expiration: expiration || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),

@@ -53,7 +53,7 @@ import sys
 import requests
 
 # ==============================================================================
-# KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE FULL PYTHON SDK
+# KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE FULL PYTHON SDK
 # Supports: init(), login(), register(), upgrade(), license(), var(), file(),
 #           webhook(), check(), checkblacklist(), log(), user_data, app_data
 # ==============================================================================
@@ -206,26 +206,26 @@ class api:
 # --- Example Usage ---
 if __name__ == "__main__":
     # Auto-configured credentials from Kanishk Cheat Auth Panel
-    FearAuthApp = api(
+    KanishkAuthApp = api(
         name="${appId}",
         ownerid="${ownerid}",
         secret="${secret}",
         version="${version}"
     )
 
-    print(f"[*] Connected to App Version: {FearAuthApp.app_data.app_ver}")
+    print(f"[*] Connected to App Version: {KanishkAuthApp.app_data.app_ver}")
     key = input("Enter License Key: ")
-    if FearAuthApp.license(key):
-        print(f"[+] Welcome {FearAuthApp.user_data.username}!")
-        print(f"[*] HWID Bound: {FearAuthApp.user_data.hwid}")
-        print(f"[*] Expiry Date: {FearAuthApp.user_data.expires}")
+    if KanishkAuthApp.license(key):
+        print(f"[+] Welcome {KanishkAuthApp.user_data.username}!")
+        print(f"[*] HWID Bound: {KanishkAuthApp.user_data.hwid}")
+        print(f"[*] Expiry Date: {KanishkAuthApp.user_data.expires}")
     else:
         sys.exit(1)
 `;
 
     case 'JavaScript':
       return `// ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE JAVASCRIPT (BROWSER / ES6) SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE JAVASCRIPT (BROWSER / ES6) SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -390,12 +390,12 @@ class api {
 }
 
 // --- Example Usage ---
-const FearAuthApp = new api("${appId}", "${ownerid}", "${secret}", "${version}");
+const KanishkAuthApp = new api("${appId}", "${ownerid}", "${secret}", "${version}");
 `;
 
     case 'TypeScript':
       return `// ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE TYPESCRIPT SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE TYPESCRIPT SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -534,7 +534,7 @@ const crypto = require('crypto');
 const os = require('os');
 
 // ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE NODE.JS SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE NODE.JS SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -659,11 +659,11 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 // ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE C# (.NET / WPF / WINFORMS) SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE C# (.NET / WPF / WINFORMS) SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
-namespace FearAuth
+namespace KanishkAuth
 {
     public class UserData
     {
@@ -847,7 +847,7 @@ namespace FearAuth
 
     case 'C++':
       return `// ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE C++ SDK (WinAPI / ImGui / Cheat Loader)
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE C++ SDK (WinAPI / ImGui / Cheat Loader)
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -857,7 +857,7 @@ namespace FearAuth
 #include <windows.h>
 #include <curl/curl.h>
 
-namespace FearAuth {
+namespace KanishkAuth {
     struct UserData {
         std::string username;
         std::string ip;
@@ -989,12 +989,12 @@ namespace FearAuth {
 
 int main() {
     curl_global_init(CURL_GLOBAL_ALL);
-    FearAuth::api FearAuthApp("${appId}", "${ownerid}", "${secret}", "${version}");
-    std::cout << "[*] Connected to App Version: " << FearAuthApp.app_data.app_ver << std::endl;
+    KanishkAuth::api KanishkAuthApp("${appId}", "${ownerid}", "${secret}", "${version}");
+    std::cout << "[*] Connected to App Version: " << KanishkAuthApp.app_data.app_ver << std::endl;
     std::cout << "Enter License Key: ";
     std::string key;
     std::cin >> key;
-    if (FearAuthApp.license(key)) {
+    if (KanishkAuthApp.license(key)) {
         std::cout << "[+] License Verified!" << std::endl;
     } else {
         std::cout << "[-] Invalid License Key!" << std::endl;
@@ -1007,7 +1007,7 @@ int main() {
 
     case 'Rust':
       return `// ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE RUST SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE RUST SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -1103,7 +1103,7 @@ import (
 )
 
 // ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE GO (GOLANG) SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE GO (GOLANG) SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -1208,7 +1208,7 @@ func main() {
 
     case 'Java':
       return `// ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE JAVA SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE JAVA SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -1217,7 +1217,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-public class FearAuth {
+public class KanishkAuth {
     public static class UserData {
         public String username = "";
         public String ip = "";
@@ -1297,7 +1297,7 @@ public class FearAuth {
 
     case 'Kotlin':
       return `// ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE KOTLIN SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE KOTLIN SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -1356,7 +1356,7 @@ class api(
 
     case 'Swift':
       return `// ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE SWIFT SDK (macOS / iOS)
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE SWIFT SDK (macOS / iOS)
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -1425,7 +1425,7 @@ class api {
     case 'PHP':
       return `<?php
 // ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE PHP SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE PHP SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -1522,7 +1522,7 @@ class api {
 
     case 'Lua':
       return `-- ==============================================================================
--- KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE LUA SDK (FiveM / Roblox / Game Modding)
+-- KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE LUA SDK (FiveM / Roblox / Game Modding)
 -- Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 -- ==============================================================================
 
@@ -1549,7 +1549,7 @@ end
 
 function api:init()
     if self.initialized then return true end
-    print("[*] Initializing FearAuth for App: " .. self.name)
+    print("[*] Initializing KanishkAuth for App: " .. self.name)
     self.initialized = true
     return true
 end
@@ -1566,7 +1566,7 @@ end
 
     case 'Dart':
       return `// ==============================================================================
-// KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE DART / FLUTTER SDK
+// KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE DART / FLUTTER SDK
 // Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 // ==============================================================================
 
@@ -1640,7 +1640,7 @@ class api {
 
     case 'Ruby':
       return `# ==============================================================================
-# KANISHK CHEAT AUTH - FEARAUTH ENTERPRISE RUBY SDK
+# KANISHK CHEAT AUTH - KANISHK CHEAT AUTH ENTERPRISE RUBY SDK
 # Supports: init(), login(), register(), license(), var(), file(), log(), user_data, app_data
 # ==============================================================================
 

@@ -1006,7 +1006,7 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {
           event: 'test.ping',
           appId: hook.appId || selectedAppId,
           timestamp: new Date().toISOString(),
-          message: 'Innovator Cheats KeyAuth Test Fire Pulse'
+          message: 'Kanishk Cheats KeyAuth Test Fire Pulse'
         })
       });
       alert(`Webhook Test Fire Sent!\nStatus Code: ${res.status} (${res.statusText})`);
@@ -1307,7 +1307,7 @@ apiurl = https://www.kanishkcheat.online/api`
               </span>
             )}
 
-            {(userRole === 'owner' || userRole === 'admin' || token === "o08jDiopRZWaPffBCQGFCHFyhH83" || (auth && auth.currentUser && auth.currentUser.email && (auth.currentUser.email.includes("innovatorcheats") || auth.currentUser.email === "yashmajevadiya456@gmail.com"))) && (
+            {(userRole === 'owner' || userRole === 'admin' || token === "o08jDiopRZWaPffBCQGFCHFyhH83" || (auth && auth.currentUser && auth.currentUser.email && (auth.currentUser.email.includes("kanishkcheats") || auth.currentUser.email === "yashmajevadiya456@gmail.com"))) && (
               <button 
                 onClick={onOpenAdmin || (() => window.open("/admin.html", "_blank"))}
                 className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-yellow-300 bg-yellow-500/20 border border-yellow-500/40 hover:bg-yellow-500/30 transition-all cursor-pointer shadow-[0_0_15px_rgba(250,204,21,0.25)]"
@@ -2267,7 +2267,7 @@ apiurl = https://www.kanishkcheat.online/api`
                             });
                           }}
                           className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/40 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 transition-all cursor-pointer shadow-[0_0_15px_rgba(168,85,247,0.2)]"
-                          title="Download all 15 SDK files matching FearAuth Setup Files structure"
+                          title="Download all 15 SDK files matching KanishkAuth Setup Files structure"
                         >
                           <Download className="w-3.5 h-3.5 text-purple-400" />
                           <span>📦 Download All 15 SDKs Kit</span>

@@ -55,7 +55,7 @@ export function AdminPanel({ userEmail, userUid, onBackToDashboard }: AdminPanel
 
   const isMasterOwner = 
     currentEmail.toLowerCase() === 'yashmajevadiya456@gmail.com' || 
-    currentEmail.toLowerCase().includes('innovatorcheats') || 
+    currentEmail.toLowerCase().includes('kanishkcheats') || 
     userUid === 'o08jDiopRZWaPffBCQGFCHFyhH83' ||
     auth.currentUser?.uid === 'o08jDiopRZWaPffBCQGFCHFyhH83' ||
     currentUserRole === 'admin' ||

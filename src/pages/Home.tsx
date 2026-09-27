@@ -141,7 +141,7 @@ export const Home: React.FC<HomeProps> = ({ onLaunch, onViewDocs }) => {
               {/* Code display inside 3D card */}
               <pre className="text-left text-xs font-mono leading-relaxed text-gray-300 overflow-x-auto select-none">
                 <code>
-                  <span className="text-blue-400">public static</span> <span className="text-cyan-400">api</span> <span className="text-purple-400">InnovatorCheatsAuth</span> = <span className="text-blue-400">new</span> <span className="text-cyan-400">api</span>(<br />
+                  <span className="text-blue-400">public static</span> <span className="text-cyan-400">api</span> <span className="text-purple-400">Kanishk CheatCheatsAuth</span> = <span className="text-blue-400">new</span> <span className="text-cyan-400">api</span>(<br />
                   &nbsp;&nbsp;name: <span className="text-green-400">"EnterpriseShield"</span>,<br />
                   &nbsp;&nbsp;ownerid: <span className="text-green-400">"INV_79A2"</span>,<br />
                   &nbsp;&nbsp;secret: <span className="text-green-400">"f7b9c9d0a92e17"</span>,<br />
@@ -150,11 +150,11 @@ export const Home: React.FC<HomeProps> = ({ onLaunch, onViewDocs }) => {
                   <br />
                   <span className="text-blue-400">void</span> <span className="text-yellow-400">Main</span>()<br />
                   {`{`}<br />
-                  &nbsp;&nbsp;InnovatorCheatsAuth.<span className="text-yellow-400">init</span>();<br />
-                  &nbsp;&nbsp;<span className="text-blue-400">if</span> (InnovatorCheatsAuth.response.success)<br />
+                  &nbsp;&nbsp;Kanishk CheatCheatsAuth.<span className="text-yellow-400">init</span>();<br />
+                  &nbsp;&nbsp;<span className="text-blue-400">if</span> (Kanishk CheatCheatsAuth.response.success)<br />
                   &nbsp;&nbsp;{`{`}<br />
-                  &nbsp;&nbsp;&nbsp;&nbsp;InnovatorCheatsAuth.<span className="text-yellow-400">license</span>(userInputKey);<br />
-                  &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">if</span> (InnovatorCheatsAuth.check())<br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;Kanishk CheatCheatsAuth.<span className="text-yellow-400">license</span>(userInputKey);<br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">if</span> (Kanishk CheatCheatsAuth.check())<br />
                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-cyan-400">Console</span>.<span className="text-yellow-400">WriteLine</span>(<span className="text-green-400">"Authorized!"</span>);<br />
                   &nbsp;&nbsp;{`}`}<br />
                   {`}`}
