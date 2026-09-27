@@ -46,13 +46,13 @@ export const Docs: React.FC<DocsProps> = ({ onBack }) => {
       bodyFields: [
         { name: 'appid', type: 'string', required: true, desc: 'Your Application ID' },
         { name: 'session_token', type: 'string', required: true, desc: 'Active Session Token from /api/init' },
-        { name: 'key', type: 'string', required: true, desc: 'License key (e.g., INV-82KS-912P-AX71)' },
+        { name: 'key', type: 'string', required: true, desc: 'License key (e.g., KC-82KS-912P-AX71)' },
         { name: 'hwid', type: 'string', required: true, desc: 'Device Hardware ID for HWID Lock' }
       ],
       defaultBody: {
         appid: 'APP_DEMO',
         session_token: 'sess_xxxxxxxxxxxxxxxx',
-        key: 'INV-DEMO-KEY-1234',
+        key: 'KC-DEMO-KEY-1234',
         hwid: 'DESKTOP-HWID-FINGERPRINT'
       }
     },
@@ -93,7 +93,7 @@ export const Docs: React.FC<DocsProps> = ({ onBack }) => {
       ],
       defaultBody: {
         appid: 'APP_DEMO',
-        key: 'INV-DEMO-KEY-1234',
+        key: 'KC-DEMO-KEY-1234',
         secret: 'secret_demo_value'
       }
     },
@@ -108,7 +108,7 @@ export const Docs: React.FC<DocsProps> = ({ onBack }) => {
       ],
       defaultBody: {
         appid: 'APP_DEMO',
-        key: 'INV-DEMO-KEY-1234',
+        key: 'KC-DEMO-KEY-1234',
         secret: 'secret_demo_value'
       }
     }
@@ -347,7 +347,7 @@ export const Docs: React.FC<DocsProps> = ({ onBack }) => {
                 <h5 className="font-semibold text-white">License Key Formatting</h5>
               </div>
               <p className="text-xs text-gray-400 leading-relaxed font-light">
-                Generated keys follow the default structure <code>INV-[XXXX]-[XXXX]-[XXXX]</code> containing alpha-numeric values. Key creation limits can be modified or customized dynamically on request.
+                Generated keys follow the default structure <code>KC-[XXXX]-[XXXX]-[XXXX]</code> containing alpha-numeric values. Key creation limits can be modified or customized dynamically on request.
               </p>
             </GlassCard>
             <GlassCard className="p-5" glowColor="none">

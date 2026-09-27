@@ -193,7 +193,7 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
   // Forms
   const [newAppName, setNewAppName] = useState('');
   const [newAppVersion, setNewAppVersion] = useState('1.0');
-  const [generatePrefix, setGeneratePrefix] = useState('INV');
+  const [generatePrefix, setGeneratePrefix] = useState('KC');
   const [generateExpiry, setGenerateExpiry] = useState('7');
   const [generateQty, setGenerateQty] = useState('1');
   const [webhookUrl, setWebhookUrl] = useState('');
@@ -842,7 +842,7 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {
         body: JSON.stringify({ appId: selectedAppId, keys: generatedListForSync })
       }).catch(err => console.error('[Sync] key-bulk error:', err));
 
-      setGeneratePrefix('INV');
+      setGeneratePrefix('KC');
       setGenerateQty('1');
       await fetchKeys();
       await fetchAppDetails();
@@ -1157,7 +1157,7 @@ ownerid = ${activeApp.ownerid}
 secret = ${activeApp.secret}
 appid = ${activeApp.appid}
 version = ${activeApp.version}
-apiurl = https://firestore.googleapis.com/v1/projects/keyauthweb-86eba/databases/(default)/documents`
+apiurl = https://www.kanishkcheat.online/api`
     : 'No Application Selected';
 
   const menuItems = [

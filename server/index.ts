@@ -71,8 +71,8 @@ async function seedDatabase() {
       const demoLicense: License = {
         id: 'lic_seed',
         appId: 'app_seed',
-        licenseKey: 'INV-DEMO-KEY-1234',
-        key: 'INV-DEMO-KEY-1234',
+        licenseKey: 'KC-DEMO-KEY-1234',
+        key: 'KC-DEMO-KEY-1234',
         hwid: null,
         hwidLock: false,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -86,7 +86,7 @@ async function seedDatabase() {
       };
       await db.insert('licenses', demoLicense);
       
-      console.log('[Seeding] Seeding complete! Login: creator@inovaaters.com / admin123 | License: INV-DEMO-KEY-1234');
+      console.log('[Seeding] Seeding complete! Login: creator@inovaaters.com / admin123 | License: KC-DEMO-KEY-1234');
     }
   } catch (err) {
     console.error('[Seeding Error]', err);
