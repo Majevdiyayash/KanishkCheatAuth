@@ -69,13 +69,17 @@ export function AdminPanel({ userEmail, userUid, onBackToDashboard }: AdminPanel
   useEffect(() => {
     if (isMasterOwner) {
       fetchUsers();
+      const interval = setInterval(() => {
+        fetchUsers(true);
+      }, 5000);
+      return () => clearInterval(interval);
     } else {
       setLoading(false);
     }
   }, [isMasterOwner]);
 
-  const fetchUsers = async () => {
-    setLoading(true);
+  const fetchUsers = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       // 1. Fetch from backend API
       let apiUsers: UserRecord[] = [];

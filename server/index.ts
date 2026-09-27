@@ -313,6 +313,52 @@ app.post('/api/auth/discord', async (req, res) => {
 // ============================================================================
 // ADMIN DASHBOARD APIS (JWT Protected)
 // ============================================================================
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const webUsers = await db.find<User>('users', []);
+    const appUsers = await db.find<AppUser>('app_users', []);
+
+    const userList: any[] = [];
+    const seenEmails = new Set<string>();
+
+    webUsers.forEach(u => {
+      if (!u.email) return;
+      const lower = u.email.toLowerCase();
+      seenEmails.add(lower);
+      userList.push({
+        id: u.id,
+        email: u.email,
+        role: u.role || (lower === 'yashmajevadiya456@gmail.com' ? 'owner' : 'user'),
+        plan: u.plan || (lower === 'yashmajevadiya456@gmail.com' ? 'enterprise' : 'free'),
+        banned: !!u.banned,
+        bannedReason: u.bannedReason || '',
+        createdAt: u.createdAt || new Date().toISOString()
+      });
+    });
+
+    appUsers.forEach(au => {
+      const emailStr = au.email || `${au.username}@kanishkauth.dev`;
+      const lower = emailStr.toLowerCase();
+      if (!seenEmails.has(lower)) {
+        seenEmails.add(lower);
+        userList.push({
+          id: au.id,
+          email: emailStr,
+          role: 'app_user',
+          plan: au.subscription || 'free',
+          banned: !!au.banned,
+          bannedReason: au.bannedReason || '',
+          createdAt: au.createdAt || new Date().toISOString()
+        });
+      }
+    });
+
+    res.json({ success: true, users: userList });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 app.get('/api/dashboard/apps', authenticateDashboard as any, async (req: AuthRequest, res) => {
   const apps = await db.find<Application>('applications', [{ field: 'ownerid', op: '==', value: req.userId }]);
   res.json({ success: true, applications: apps });
