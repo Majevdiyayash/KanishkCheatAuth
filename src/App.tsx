@@ -7,6 +7,7 @@ import { Docs } from './pages/Docs';
 import { Premium } from './pages/Premium';
 import { AdminPanel } from './pages/AdminPanel';
 import { DexterAuthModal } from './components/DexterAuthModal';
+import { CloudShieldGatekeeper } from './components/CloudShieldGatekeeper';
 
 // Firebase imports
 import { auth, googleProvider, db } from './lib/firebase';
@@ -20,6 +21,10 @@ import {
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 function App() {
+  const [isBrowserVerified, setIsBrowserVerified] = useState(() => {
+    return typeof window !== 'undefined' && sessionStorage.getItem('kc_browser_verified') === 'true';
+  });
+
   const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'docs' | 'premium' | 'admin'>('login');
   const [token, setToken] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('user');
@@ -218,6 +223,10 @@ function App() {
       setAuthLoading(false);
     }
   };
+
+  if (!isBrowserVerified) {
+    return <CloudShieldGatekeeper onVerified={() => setIsBrowserVerified(true)} />;
+  }
 
   return (
     <div className="relative min-h-screen text-gray-200 overflow-hidden font-sans bg-[#03030a]">
