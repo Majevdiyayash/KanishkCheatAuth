@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 function replaceInFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
   let content = fs.readFileSync(filePath, 'utf8');
   let original = content;
 
@@ -13,13 +14,13 @@ function replaceInFile(filePath) {
   content = content.replace(/fearauth/g, 'kanishkauth');
   content = content.replace(/Fear Auth/g, 'Kanishk Auth');
 
-  content = content.replace(/INNOVATOR CHEAT/g, 'KANISHK CHEAT');
-  content = content.replace(/Innovator Cheat/g, 'Kanishk Cheat');
-  content = content.replace(/innovatorcheat/g, 'kanishkcheat');
-  content = content.replace(/INNOVATOR/g, 'KANISHK CHEAT');
-  content = content.replace(/Innovator/g, 'Kanishk Cheat');
-  content = content.replace(/innovator/g, 'kanishkcheat');
-  content = content.replace(/inovaaters/g, 'kanishkcheat');
+  content = content.replace(/INNOVATOR CHEATS/gi, 'KANISHK CHEAT');
+  content = content.replace(/INNOVATOR AUTH/gi, 'KANISHK CHEAT AUTH');
+  content = content.replace(/INNOVATOR KEYAUTH/gi, 'KANISHK CHEAT AUTH');
+  content = content.replace(/INNOVATOR/gi, 'KANISHK CHEAT');
+  content = content.replace(/Innovator/gi, 'Kanishk Cheat');
+  content = content.replace(/innovator/gi, 'kanishkcheat');
+  content = content.replace(/inovaaters/gi, 'kanishkcheat');
 
   if (content !== original) {
     fs.writeFileSync(filePath, content, 'utf8');
@@ -35,14 +36,19 @@ function scanDir(dir) {
     const stat = fs.statSync(fullPath);
     if (stat.isDirectory()) {
       scanDir(fullPath);
-    } else if (/\.(ts|tsx|js|jsx|cs|html|json|md|py|c|cpp|hpp|h|rs|go|java|kt|swift|php|lua|dart|rb)$/i.test(file)) {
+    } else {
       replaceInFile(fullPath);
     }
   }
 }
 
-console.log('Starting branding replacement...');
+console.log('Starting total project branding replacement...');
 scanDir('E:\\KANISH CHEAT GITHUB\\src');
 scanDir('E:\\KANISH CHEAT GITHUB\\server');
+scanDir('E:\\KANISH CHEAT GITHUB\\public');
 replaceInFile('E:\\KANISH CHEAT GITHUB\\index.html');
-console.log('Branding replacement complete!');
+replaceInFile('E:\\KANISH CHEAT GITHUB\\.env');
+replaceInFile('E:\\KANISH CHEAT GITHUB\\.env.example');
+replaceInFile('E:\\KANISH CHEAT GITHUB\\render.yaml');
+replaceInFile('E:\\KANISH CHEAT GITHUB\\run_dev.bat');
+console.log('Total project branding replacement complete!');

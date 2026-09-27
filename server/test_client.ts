@@ -1,5 +1,5 @@
 /**
- * INOVAATERS KEYAUTH CLIENT SDK INTEGRATION TEST SUITE
+ * kanishkcheat KEYAUTH CLIENT SDK INTEGRATION TEST SUITE
  * This script walks through the entire client-server validation lifecycle.
  */
 

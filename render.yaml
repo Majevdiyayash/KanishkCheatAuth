@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: innovator-keyauth-enterprise
+    name: KANISHK CHEAT-keyauth-enterprise
     env: node
     plan: free
     buildCommand: npm install && npm run build

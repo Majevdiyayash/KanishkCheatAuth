@@ -1,7 +1,7 @@
 @echo off
-title INNOVATOR KEYAUTH Web Platform
+title KANISHK CHEAT AUTH Web Platform
 echo ===================================================
-echo  Starting INNOVATOR KEYAUTH Web Server & Frontend...
+echo  Starting KANISHK CHEAT AUTH Web Server & Frontend...
 echo ===================================================
 set PATH=%PATH%;C:\Program Files\nodejs
 cd /d "%~dp0"
