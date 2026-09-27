@@ -238,58 +238,67 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
   };
 
 
-  // Load applications directly from Firestore + Backend API + LocalStorage Persistent Cache
+  // Ultra-fast instant data loaders with Stale-While-Revalidate and Parallel Promises
   const fetchApps = async () => {
+    const appsList: Application[] = [];
+    const seenIds = new Set<string>();
+
+    const addApp = (a: Application) => {
+      if (!a || !a.id || seenIds.has(a.id)) return;
+      seenIds.add(a.id);
+      appsList.push(a);
+    };
+
+    // 1. Instant LocalStorage Load (<1ms)
     try {
-      const appsList: Application[] = [];
-      const seenIds = new Set<string>();
+      const allSaved = localStorage.getItem('kc_all_created_apps');
+      if (allSaved) JSON.parse(allSaved).forEach(addApp);
 
-      const addApp = (a: Application) => {
-        if (!a || !a.id || seenIds.has(a.id)) return;
-        seenIds.add(a.id);
-        appsList.push(a);
-      };
+      const globalSaved = localStorage.getItem('kc_global_user_apps');
+      if (globalSaved) JSON.parse(globalSaved).forEach(addApp);
 
-      // 1. Fetch from LocalStorage persistent cache (All + Global + Token specific)
-      try {
-        const allSaved = localStorage.getItem('kc_all_created_apps');
-        if (allSaved) JSON.parse(allSaved).forEach(addApp);
+      if (token) {
+        const userSaved = localStorage.getItem(`kc_user_apps_${token}`);
+        if (userSaved) JSON.parse(userSaved).forEach(addApp);
+      }
+    } catch (e) {}
 
-        const globalSaved = localStorage.getItem('kc_global_user_apps');
-        if (globalSaved) JSON.parse(globalSaved).forEach(addApp);
+    if (appsList.length > 0) {
+      setApps([...appsList]);
+      const savedId = localStorage.getItem('kc_selected_appid');
+      if (savedId && appsList.some(a => a.id === savedId)) {
+        changeSelectedAppId(savedId);
+      } else if (!selectedAppId || !appsList.some(a => a.id === selectedAppId)) {
+        changeSelectedAppId(appsList[0].id);
+      }
+    }
 
-        if (token) {
-          const userSaved = localStorage.getItem(`kc_user_apps_${token}`);
-          if (userSaved) JSON.parse(userSaved).forEach(addApp);
-        }
-      } catch (e) {}
+    // 2. Parallel Remote Sync (Backend API + Firestore concurrently)
+    try {
+      const apiPromise = fetch('/api/dashboard/apps', {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(res => res.ok ? res.json() : null).catch(() => null);
 
-      // 2. Fetch from Backend API
-      try {
-        const res = await fetch('/api/dashboard/apps', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.applications)) {
-            data.applications.forEach(addApp);
-          }
-        }
-      } catch (e) {}
+      const firestorePromise = getDocs(query(collection(db, 'applications'))).catch(() => null);
 
-      // 3. Fetch from Firestore
-      try {
-        const q = query(collection(db, 'applications'));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((docSnap) => {
-          addApp({ id: docSnap.id, ...docSnap.data() } as Application);
-        });
-      } catch (e) {
-        console.warn('[Firestore] fetchApps warning:', e);
+      const [apiRes, fsSnap] = await Promise.all([apiPromise, firestorePromise]);
+
+      if (apiRes && apiRes.success && Array.isArray(apiRes.applications)) {
+        apiRes.applications.forEach(addApp);
       }
 
+      if (fsSnap) {
+        fsSnap.forEach((docSnap) => {
+          addApp({ id: docSnap.id, ...docSnap.data() } as Application);
+        });
+      }
+
+      setApps([...appsList]);
+      try {
+        localStorage.setItem('kc_all_created_apps', JSON.stringify(appsList));
+      } catch (e) {}
+
       if (appsList.length > 0) {
-        setApps(appsList);
         const savedId = localStorage.getItem('kc_selected_appid');
         if (savedId && appsList.some(a => a.id === savedId)) {
           changeSelectedAppId(savedId);
@@ -300,152 +309,171 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
         setApps([]);
       }
     } catch (err) {
-      console.error('[Firestore] fetchApps error:', err);
+      console.error('[fetchApps] Parallel sync error:', err);
     }
   };
 
-  // Load app details (stats, keys, logs, resets, webhooks) from Firestore
+  // Parallel fetch for app stats and details (7 Firestore queries executed concurrently)
   const fetchAppDetails = async () => {
     if (!selectedAppId) return;
     setLoadingStats(true);
-    
-    let total = 0;
-    let active = 0;
-    let bound = 0;
-    let resetCount = 0;
 
-    // 1. Fetch Licenses
-    let licList: License[] = [];
     try {
       const licQ = query(collection(db, 'licenses'), where('appId', '==', selectedAppId));
-      const licSnapshot = await getDocs(licQ);
-      licSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        licList.push({ id: docSnap.id, ...data } as License);
-      });
-    } catch (e) {
-      console.warn('[Firestore] Failed to fetch licenses:', e);
-    }
-
-    total = licList.length;
-    licList.forEach((data) => {
-      if (data.status === 'active') active++;
-      if (data.hwid) bound++;
-    });
-    setKeys(licList);
-
-    // 2. Fetch Webhooks
-    try {
       const webQ = query(collection(db, 'webhooks'), where('appId', '==', selectedAppId));
-      const webSnapshot = await getDocs(webQ);
-      const webList: Webhook[] = [];
-      webSnapshot.forEach((docSnap) => {
-        webList.push({ id: docSnap.id, ...docSnap.data() } as Webhook);
-      });
-      setWebhooks(webList);
-    } catch (e) {
-      console.warn('[Firestore] Failed to fetch webhooks:', e);
-    }
-
-    // 3. Fetch API request logs
-    try {
       const logQ = query(collection(db, 'api_logs'), where('appId', '==', selectedAppId));
-      const logSnapshot = await getDocs(logQ);
-      const logList: ApiLog[] = [];
-      logSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        logList.push({ 
-          id: docSnap.id, 
-          ...data, 
-          timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp 
-        } as ApiLog);
-      });
-      logList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      setLogs(logList.slice(0, 50));
-    } catch (e) {
-      console.warn('[Firestore] Failed to fetch api_logs:', e);
-    }
-
-    // 4. Fetch HWID resets
-    try {
       const resetQ = query(collection(db, 'hwid_resets'), where('appId', '==', selectedAppId));
-      const resetSnapshot = await getDocs(resetQ);
-      const resetList: HWIDReset[] = [];
-      resetSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        resetList.push({ 
-          id: docSnap.id, 
-          licenseKey: data.licenseKey || data.licenseId || 'Unknown Key',
-          oldHwid: data.oldHwid || null,
-          newHwid: data.newHwid || null,
-          resetTime: data.resetAt instanceof Timestamp ? data.resetAt.toDate().toISOString() : (data.resetAt || new Date().toISOString()),
-          resetBy: data.resetBy || 'Creator'
-        });
-      });
-      setResets(resetList);
-      resetCount = resetList.length;
-    } catch (e) {
-      console.warn('[Firestore] Failed to fetch hwid_resets:', e);
-    }
-
-    // 5. Fetch Resellers
-    try {
       const resQ = query(collection(db, 'resellers'), where('appId', '==', selectedAppId));
-      const resSnap = await getDocs(resQ);
-      const resList: any[] = [];
-      resSnap.forEach((docSnap) => resList.push({ id: docSnap.id, ...docSnap.data() }));
-      setResellers(resList);
-    } catch (e) { console.warn('[Firestore] Failed to fetch resellers:', e); }
-
-    // 6. Fetch Cloud Vars & Files
-    try {
       const varQ = query(collection(db, 'cloud_vars'), where('appId', '==', selectedAppId));
-      const varSnap = await getDocs(varQ);
-      const varList: any[] = [];
-      varSnap.forEach((docSnap) => varList.push({ id: docSnap.id, ...docSnap.data() }));
-      setCloudVars(varList);
-
       const fileQ = query(collection(db, 'cloud_files'), where('appId', '==', selectedAppId));
-      const fileSnap = await getDocs(fileQ);
-      const fileList: any[] = [];
-      fileSnap.forEach((docSnap) => fileList.push({ id: docSnap.id, ...docSnap.data() }));
-      setCloudFiles(fileList);
-    } catch (e) { console.warn('[Firestore] Failed to fetch cloud vars/files:', e); }
-
-    // 7. Fetch Blacklists
-    try {
       const blQ = query(collection(db, 'blacklists'), where('appId', '==', selectedAppId));
-      const blSnap = await getDocs(blQ);
-      const blList: any[] = [];
-      blSnap.forEach((docSnap) => blList.push({ id: docSnap.id, ...docSnap.data() }));
-      setBlacklists(blList);
-    } catch (e) { console.warn('[Firestore] Failed to fetch blacklists:', e); }
 
-    // Update state stats
-    setStats({
-      totalKeys: total,
-      activeKeys: active,
-      boundDevices: bound,
-      totalResets: resetCount
-    });
-    setLoadingStats(false);
+      const [
+        licSnap, webSnap, logSnap, resetSnap, resSnap, varSnap, fileSnap, blSnap
+      ] = await Promise.allSettled([
+        getDocs(licQ),
+        getDocs(webQ),
+        getDocs(logQ),
+        getDocs(resetQ),
+        getDocs(resQ),
+        getDocs(varQ),
+        getDocs(fileQ),
+        getDocs(blQ)
+      ]);
+
+      // 1. Process Licenses
+      let licList: License[] = [];
+      let total = 0, active = 0, bound = 0;
+      if (licSnap.status === 'fulfilled' && licSnap.value) {
+        licSnap.value.forEach((docSnap) => {
+          licList.push({ id: docSnap.id, ...docSnap.data() } as License);
+        });
+      }
+      total = licList.length;
+      licList.forEach((data) => {
+        if (data.status === 'active') active++;
+        if (data.hwid) bound++;
+      });
+      setKeys(licList);
+
+      // 2. Process Webhooks
+      if (webSnap.status === 'fulfilled' && webSnap.value) {
+        const webList: Webhook[] = [];
+        webSnap.value.forEach((docSnap) => webList.push({ id: docSnap.id, ...docSnap.data() } as Webhook));
+        setWebhooks(webList);
+      }
+
+      // 3. Process API logs
+      if (logSnap.status === 'fulfilled' && logSnap.value) {
+        const logList: ApiLog[] = [];
+        logSnap.value.forEach((docSnap) => {
+          const data = docSnap.data();
+          logList.push({
+            id: docSnap.id,
+            ...data,
+            timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : data.timestamp
+          } as ApiLog);
+        });
+        logList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setLogs(logList.slice(0, 50));
+      }
+
+      // 4. Process HWID resets
+      let resetCount = 0;
+      if (resetSnap.status === 'fulfilled' && resetSnap.value) {
+        const resetList: HWIDReset[] = [];
+        resetSnap.value.forEach((docSnap) => {
+          const data = docSnap.data();
+          resetList.push({
+            id: docSnap.id,
+            licenseKey: data.licenseKey || data.licenseId || 'Unknown Key',
+            oldHwid: data.oldHwid || null,
+            newHwid: data.newHwid || null,
+            resetTime: data.resetAt instanceof Timestamp ? data.resetAt.toDate().toISOString() : (data.resetAt || new Date().toISOString()),
+            resetBy: data.resetBy || 'Creator'
+          });
+        });
+        setResets(resetList);
+        resetCount = resetList.length;
+      }
+
+      // 5. Process Resellers
+      if (resSnap.status === 'fulfilled' && resSnap.value) {
+        const resList: any[] = [];
+        resSnap.value.forEach((docSnap) => resList.push({ id: docSnap.id, ...docSnap.data() }));
+        setResellers(resList);
+      }
+
+      // 6. Process Cloud Vars & Files
+      if (varSnap.status === 'fulfilled' && varSnap.value) {
+        const varList: any[] = [];
+        varSnap.value.forEach((docSnap) => varList.push({ id: docSnap.id, ...docSnap.data() }));
+        setCloudVars(varList);
+      }
+      if (fileSnap.status === 'fulfilled' && fileSnap.value) {
+        const fileList: any[] = [];
+        fileSnap.value.forEach((docSnap) => fileList.push({ id: docSnap.id, ...docSnap.data() }));
+        setCloudFiles(fileList);
+      }
+
+      // 7. Process Blacklists
+      if (blSnap.status === 'fulfilled' && blSnap.value) {
+        const blList: any[] = [];
+        blSnap.value.forEach((docSnap) => blList.push({ id: docSnap.id, ...docSnap.data() }));
+        setBlacklists(blList);
+      }
+
+      setStats({
+        totalKeys: total,
+        activeKeys: active,
+        boundDevices: bound,
+        totalResets: resetCount
+      });
+    } catch (e) {
+      console.error('[fetchAppDetails Error]:', e);
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
-  // Load license keys from Firestore + Backend API + LocalStorage Persistent Cache
+  // Instant local keys + Parallel remote sync
   const fetchKeys = async () => {
     if (!selectedAppId) return;
     setLoadingKeys(true);
-    try {
-      const keysList: License[] = [];
-      const seenIds = new Set<string>();
+    const keysList: License[] = [];
+    const seenIds = new Set<string>();
 
-      // 1. Fetch from Firestore
-      try {
-        const licQ = query(collection(db, 'licenses'), where('appId', '==', selectedAppId));
-        const licSnapshot = await getDocs(licQ);
-        licSnapshot.forEach((docSnap) => {
+    const addKey = (k: License) => {
+      if (!k || !k.id || seenIds.has(k.id)) return;
+      seenIds.add(k.id);
+      keysList.push(k);
+    };
+
+    // 1. Instant LocalStorage Load (<1ms)
+    try {
+      const localKey = `kc_app_keys_${selectedAppId}`;
+      const localSaved = localStorage.getItem(localKey);
+      if (localSaved) {
+        const parsed: License[] = JSON.parse(localSaved);
+        parsed.forEach(addKey);
+        setKeys([...keysList]);
+      }
+    } catch (e) {}
+
+    // 2. Parallel Remote Sync (Firestore + Backend API concurrently)
+    try {
+      const licQ = query(collection(db, 'licenses'), where('appId', '==', selectedAppId));
+      const firestorePromise = getDocs(licQ).catch(() => null);
+      const apiPromise = fetch(`/api/dashboard/keys?appId=${selectedAppId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(res => res.ok ? res.json() : null).catch(() => null);
+
+      const [fsSnap, apiRes] = await Promise.all([firestorePromise, apiPromise]);
+
+      if (fsSnap) {
+        fsSnap.forEach((docSnap) => {
           const data = docSnap.data();
-          const item: License = { 
+          addKey({
             id: docSnap.id,
             licenseKey: data.key || data.licenseKey || 'KC-XXXX-XXXX',
             hwid: data.hwid || null,
@@ -456,74 +484,63 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
             maxResets: data.maxResets ?? 10,
             resetCount: data.resetCount ?? 0,
             lastResetAt: data.lastResetAt instanceof Timestamp ? data.lastResetAt.toDate().toISOString() : (data.lastResetAt || null)
-          };
-          if (!seenIds.has(item.id)) {
-            seenIds.add(item.id);
-            keysList.push(item);
-          }
-        });
-      } catch (e) {}
-
-      // 2. Fetch from Backend API
-      try {
-        const res = await fetch(`/api/dashboard/keys?appId=${selectedAppId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.keys)) {
-            data.keys.forEach((k: any) => {
-              if (!seenIds.has(k.id)) {
-                seenIds.add(k.id);
-                keysList.push(k);
-              }
-            });
-          }
-        }
-      } catch (e) {}
-
-      // 3. Fetch from LocalStorage persistent cache
-      try {
-        const localKey = `kc_app_keys_${selectedAppId}`;
-        const localSaved = localStorage.getItem(localKey);
-        if (localSaved) {
-          const parsed: License[] = JSON.parse(localSaved);
-          parsed.forEach(k => {
-            if (!seenIds.has(k.id)) {
-              seenIds.add(k.id);
-              keysList.push(k);
-            }
           });
-        }
-      } catch (e) {}
+        });
+      }
 
-      setKeys(keysList);
+      if (apiRes && apiRes.success && Array.isArray(apiRes.keys)) {
+        apiRes.keys.forEach(addKey);
+      }
 
+      setKeys([...keysList]);
       try {
         localStorage.setItem(`kc_app_keys_${selectedAppId}`, JSON.stringify(keysList));
       } catch (e) {}
     } catch (e) {
-      console.error('[FetchKeys Error]:', e);
+      console.error('[fetchKeys Error]:', e);
     } finally {
       setLoadingKeys(false);
     }
   };
 
-  // Load registered app users from Firestore + Backend API + LocalStorage Persistent Cache
+  // Instant local app users + Parallel remote sync
   const fetchUsers = async () => {
     if (!selectedAppId) return;
     setLoadingUsers(true);
-    try {
-      const usersList: any[] = [];
-      const seenIds = new Set<string>();
+    const usersList: any[] = [];
+    const seenIds = new Set<string>();
 
-      // 1. Fetch from Firestore
-      try {
-        const userQ = query(collection(db, 'app_users'), where('appId', '==', selectedAppId));
-        const userSnapshot = await getDocs(userQ);
-        userSnapshot.forEach((docSnap) => {
+    const addUser = (u: any) => {
+      if (!u || !u.id || seenIds.has(u.id)) return;
+      seenIds.add(u.id);
+      usersList.push(u);
+    };
+
+    // 1. Instant LocalStorage Load (<1ms)
+    try {
+      const localKey = `kc_app_users_${selectedAppId}`;
+      const localSaved = localStorage.getItem(localKey);
+      if (localSaved) {
+        const parsed: any[] = JSON.parse(localSaved);
+        parsed.forEach(addUser);
+        setAppUsers([...usersList]);
+      }
+    } catch (e) {}
+
+    // 2. Parallel Remote Sync (Firestore + Backend API concurrently)
+    try {
+      const userQ = query(collection(db, 'app_users'), where('appId', '==', selectedAppId));
+      const firestorePromise = getDocs(userQ).catch(() => null);
+      const apiPromise = fetch(`/api/dashboard/users?appId=${selectedAppId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(res => res.ok ? res.json() : null).catch(() => null);
+
+      const [fsSnap, apiRes] = await Promise.all([firestorePromise, apiPromise]);
+
+      if (fsSnap) {
+        fsSnap.forEach((docSnap) => {
           const data = docSnap.data();
-          const item = {
+          addUser({
             id: docSnap.id,
             appId: selectedAppId,
             username: data.username || (data.email ? data.email.split('@')[0] : 'User'),
@@ -539,54 +556,20 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
             lastLogin: data.lastLogin || null,
             status: data.banned ? 'banned' : (data.expiration && new Date(data.expiration).getTime() < Date.now() ? 'expired' : 'active'),
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : (data.createdAt || '')
-          };
-          if (!seenIds.has(item.id)) {
-            seenIds.add(item.id);
-            usersList.push(item);
-          }
-        });
-      } catch (e) {}
-
-      // 2. Fetch from Backend API
-      try {
-        const res = await fetch(`/api/dashboard/users?appId=${selectedAppId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.users)) {
-            data.users.forEach((u: any) => {
-              if (!seenIds.has(u.id)) {
-                seenIds.add(u.id);
-                usersList.push(u);
-              }
-            });
-          }
-        }
-      } catch (e) {}
-
-      // 3. Fetch from LocalStorage persistent cache
-      try {
-        const localKey = `kc_app_users_${selectedAppId}`;
-        const localSaved = localStorage.getItem(localKey);
-        if (localSaved) {
-          const parsed: any[] = JSON.parse(localSaved);
-          parsed.forEach(u => {
-            if (!seenIds.has(u.id)) {
-              seenIds.add(u.id);
-              usersList.push(u);
-            }
           });
-        }
-      } catch (e) {}
+        });
+      }
 
-      setAppUsers(usersList);
+      if (apiRes && apiRes.success && Array.isArray(apiRes.users)) {
+        apiRes.users.forEach(addUser);
+      }
 
+      setAppUsers([...usersList]);
       try {
         localStorage.setItem(`kc_app_users_${selectedAppId}`, JSON.stringify(usersList));
       } catch (e) {}
     } catch (e) {
-      console.error('[FetchUsers Error]:', e);
+      console.error('[fetchUsers Error]:', e);
     } finally {
       setLoadingUsers(false);
     }
@@ -756,18 +739,20 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
         setKeysCreatedLast24h(0);
         return; 
       }
+      // Parallel license queries for all apps
+      const snapshots = await Promise.all(
+        appIds.map(aid => getDocs(query(collection(db, 'licenses'), where('appId', '==', aid))))
+      );
+
       let total = 0;
       let last24hCount = 0;
       const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
       
-      for (const aid of appIds) {
-        const kq = query(collection(db, 'licenses'), where('appId', '==', aid));
-        const ks = await getDocs(kq);
+      for (const ks of snapshots) {
         total += ks.size;
-        
         ks.forEach(docSnap => {
           const data = docSnap.data();
-          let createdTime = Date.now(); // default to now if Firestore serverTimestamp is still null/pending sync
+          let createdTime = Date.now();
           if (data.createdAt) {
             createdTime = data.createdAt.toDate ? data.createdAt.toDate().getTime() : new Date(data.createdAt).getTime();
           }
