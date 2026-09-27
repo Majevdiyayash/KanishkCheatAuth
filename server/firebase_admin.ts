@@ -9,13 +9,13 @@ import path from 'path';
 
 // Firebase configuration matching frontend dashboard
 const firebaseConfig = {
-  apiKey: "AIzaSyBaAoUEm8ZGFm343C-oBsah95yHZ-ZRav4",
-  authDomain: "innovator-keyauth.firebaseapp.com",
-  projectId: "innovator-keyauth",
-  storageBucket: "innovator-keyauth.firebasestorage.app",
-  messagingSenderId: "1027761962877",
-  appId: "1:1027761962877:web:c1937e694f781bbaaad614",
-  measurementId: "G-45ZXCZ71CS"
+  apiKey: "AIzaSyDP35XksoKSu0VPZDe6PkQPDDIUamJ8SIs",
+  authDomain: "kanishkcheatauth.firebaseapp.com",
+  projectId: "kanishkcheatauth",
+  storageBucket: "kanishkcheatauth.firebasestorage.app",
+  messagingSenderId: "986999243139",
+  appId: "1:986999243139:web:bf0ee9aa2427cb88e9b6b6",
+  measurementId: "G-RSEDYHLPJK"
 };
 
 // Initialize Firebase App for Node.js Backend
