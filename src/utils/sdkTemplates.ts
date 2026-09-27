@@ -39,7 +39,7 @@ export function getSdkCode(language: string, app: AppDetails): string {
   const ownerid = app.ownerid || "OWNER_ID_HERE";
   const secret = app.secret || "SECRET_HERE";
   const version = app.version || "1.0";
-  const apiUrl = app.apiUrl || "http://localhost:5000/api";
+  const apiUrl = app.apiUrl || "https://www.kanishkcheat.online/api";
 
   switch (language) {
     case 'Python':
