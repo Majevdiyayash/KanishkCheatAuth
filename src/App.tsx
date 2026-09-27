@@ -108,9 +108,35 @@ function App() {
       setPassword('');
       setCurrentPage('dashboard');
     } catch (err: any) {
+      const code = err.code || '';
+      
+      // Fallback to Express backend API if Firebase domain is unauthorized or blocked
+      if (code === 'auth/unauthorized-domain' || code === 'auth/network-request-failed' || code === 'auth/operation-not-allowed') {
+        try {
+          const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, username: email.split('@')[0] })
+          });
+          const data = await res.json();
+          if (data.success || data.user || data.token) {
+            const uid = data.user?.id || data.token || `usr_${Date.now()}`;
+            const isOwnerEmail = email.toLowerCase() === 'yashmajevadiya456@gmail.com';
+            setToken(uid);
+            setUserRole(isOwnerEmail ? 'owner' : (data.user?.role || 'user'));
+            setEmail('');
+            setPassword('');
+            setCurrentPage('dashboard');
+            setAuthLoading(false);
+            return;
+          }
+        } catch { /* proceed to format firebase error */ }
+      }
+
       // Clean up Firebase error messages for user readability
       let errMsg = err.message || 'Authentication failed';
-      const code = err.code || '';
+      if (code === 'auth/unauthorized-domain') errMsg = 'Firebase Domain Unauthorized. Please add kanishkcheat.online & www.kanishkcheat.online to Firebase Console -> Authentication -> Settings -> Authorized Domains.';
       if (code === 'auth/email-already-in-use') errMsg = 'This email is already registered. Try logging in instead.';
       if (code === 'auth/wrong-password') errMsg = 'Incorrect password. Please try again.';
       if (code === 'auth/user-not-found') errMsg = 'No account found with this email. Register first.';
