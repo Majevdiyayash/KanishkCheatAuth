@@ -26,8 +26,14 @@ function App() {
     return typeof window !== 'undefined' && sessionStorage.getItem('kc_browser_verified') === 'true';
   });
 
-  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'docs' | 'premium' | 'admin'>('login');
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('kc_auth_token') || null : null;
+  });
+
+  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'docs' | 'premium' | 'admin'>(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('kc_auth_token')) ? 'dashboard' : 'login';
+  });
+
   const [userRole, setUserRole] = useState<string>('user');
   
   // Auth state
@@ -41,6 +47,7 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setToken(user.uid);
+        localStorage.setItem('kc_auth_token', user.uid);
         const userEmailLower = user.email?.toLowerCase() || '';
         if (userEmailLower === 'yashmajevadiya456@gmail.com') {
           setUserRole('owner');
@@ -58,9 +65,12 @@ function App() {
         }
         setCurrentPage(prev => (prev === 'home' || prev === 'login' || prev === 'register') ? 'dashboard' : prev);
       } else {
-        setToken(null);
-        setUserRole('user');
-        setCurrentPage(prev => (prev === 'dashboard' || prev === 'premium' || prev === 'admin' || prev === 'home') ? 'login' : prev);
+        const savedToken = localStorage.getItem('kc_auth_token');
+        if (!savedToken) {
+          setToken(null);
+          setUserRole('user');
+          setCurrentPage(prev => (prev === 'dashboard' || prev === 'premium' || prev === 'admin' || prev === 'home') ? 'login' : prev);
+        }
       }
     });
     return () => unsubscribe();
@@ -69,6 +79,7 @@ function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      localStorage.removeItem('kc_auth_token');
       setToken(null);
       setCurrentPage('login');
     } catch (err: any) {

@@ -272,12 +272,11 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
         }
       } catch (e) {}
 
-      // 3. Fetch from LocalStorage persistent cache
+      // 3. Fetch from LocalStorage persistent cache (Global + Token specific)
       try {
-        const localKey = `kc_user_apps_${token}`;
-        const localSaved = localStorage.getItem(localKey);
-        if (localSaved) {
-          const parsed: Application[] = JSON.parse(localSaved);
+        const globalSaved = localStorage.getItem('kc_global_user_apps');
+        if (globalSaved) {
+          const parsed: Application[] = JSON.parse(globalSaved);
           parsed.forEach(a => {
             if (!seenIds.has(a.id)) {
               seenIds.add(a.id);
@@ -285,22 +284,31 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
             }
           });
         }
+        if (token) {
+          const localSaved = localStorage.getItem(`kc_user_apps_${token}`);
+          if (localSaved) {
+            const parsed: Application[] = JSON.parse(localSaved);
+            parsed.forEach(a => {
+              if (!seenIds.has(a.id)) {
+                seenIds.add(a.id);
+                appsList.push(a);
+              }
+            });
+          }
+        }
       } catch (e) {}
 
-      // Filter apps for current user token or demo apps
-      const userApps = appsList.filter(a => a.ownerid === token || (a as any).ownerId === token || a.ownerid === 'usr_seed' || userRole === 'owner');
-
-      if (userApps.length > 0) {
-        setApps(userApps);
-        if (!selectedAppId) setSelectedAppId(userApps[0].id);
+      if (appsList.length > 0) {
+        setApps(appsList);
+        if (!selectedAppId) setSelectedAppId(appsList[0].id);
       } else {
         setApps(DEFAULT_STATIC_APPS);
-        if (!selectedAppId) setSelectedAppId(DEFAULT_STATIC_APPS[0].id);
+        if (!selectedAppId && DEFAULT_STATIC_APPS.length > 0) setSelectedAppId(DEFAULT_STATIC_APPS[0].id);
       }
     } catch (err) {
       console.error('[Firestore] fetchApps error:', err);
       setApps(DEFAULT_STATIC_APPS);
-      if (!selectedAppId) setSelectedAppId(DEFAULT_STATIC_APPS[0].id);
+      if (!selectedAppId && DEFAULT_STATIC_APPS.length > 0) setSelectedAppId(DEFAULT_STATIC_APPS[0].id);
     }
   };
 
@@ -847,7 +855,19 @@ const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
         console.warn('[Firestore Lags] Proceeding with instant local state & backend API sync');
       }
 
-      // Update state instantly so user doesn't wait
+      // Update state & global localStorage cache instantly so user doesn't wait
+      try {
+        const existingGlobal = JSON.parse(localStorage.getItem('kc_global_user_apps') || '[]');
+        const updatedGlobal = [newApp, ...existingGlobal.filter((a: any) => a.id !== generatedAppId)];
+        localStorage.setItem('kc_global_user_apps', JSON.stringify(updatedGlobal));
+        if (token) {
+          const localKey = `kc_user_apps_${token}`;
+          const existingLocal = JSON.parse(localStorage.getItem(localKey) || '[]');
+          const updatedLocal = [newApp, ...existingLocal.filter((a: any) => a.id !== generatedAppId)];
+          localStorage.setItem(localKey, JSON.stringify(updatedLocal));
+        }
+      } catch (e) {}
+
       setApps(prev => [newApp, ...prev.filter(a => a.id !== generatedAppId)]);
       setSelectedAppId(generatedAppId);
 
