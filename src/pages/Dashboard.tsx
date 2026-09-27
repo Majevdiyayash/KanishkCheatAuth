@@ -228,62 +228,71 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
     }
   };
 
-const DEFAULT_STATIC_APPS: Application[] = [
-  {
-    id: 'app_kanishk_apex_01',
-    appName: 'Kanishk Apex Spoofer & Loader',
-    ownerid: 'usr_seed',
-    secret: 'sec_kanishk_apex_9981a4b',
-    appid: 'kanishk_apex_prod_01',
-    version: '2.4',
-    createdAt: '2026-08-20T10:05:00.000Z'
-  },
-  {
-    id: 'app_val_internal_02',
-    appName: 'Valorant Internal Cheat Suite',
-    ownerid: 'usr_seed',
-    secret: 'sec_val_int_7721b8c',
-    appid: 'val_internal_v2',
-    version: '3.1',
-    createdAt: '2026-08-25T14:20:00.000Z'
-  },
-  {
-    id: 'app_cs2_hvh_03',
-    appName: 'CS2 HvH Rage Engine',
-    ownerid: 'usr_seed',
-    secret: 'sec_cs2_rage_3341c9d',
-    appid: 'cs2_hvh_v1',
-    version: '1.0',
-    createdAt: '2026-09-01T18:00:00.000Z'
-  }
-];
+const DEFAULT_STATIC_APPS: Application[] = [];
 
-const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {
-  'app_kanishk_apex_01': [
-    { id: 'lic_01', licenseKey: 'KANISHK-APEX-9981-VIP', hwid: 'HWID-8821-4412-9901', hwidLock: true, expiresAt: '2026-10-25T00:00:00.000Z', status: 'active', createdAt: '2026-09-20T10:00:00.000Z', maxResets: 3, resetCount: 1, lastResetAt: '2026-09-22T12:00:00.000Z' },
-    { id: 'lic_02', licenseKey: 'KANISHK-APEX-7712-PRO', hwid: null, hwidLock: true, expiresAt: '2026-10-01T00:00:00.000Z', status: 'active', createdAt: '2026-09-24T15:30:00.000Z', maxResets: 2, resetCount: 0, lastResetAt: null },
-    { id: 'lic_03', licenseKey: 'KANISHK-APEX-0001-DEMO', hwid: 'HWID-1111-2222-3333', hwidLock: false, expiresAt: '2026-09-21T00:00:00.000Z', status: 'expired', createdAt: '2026-09-15T08:00:00.000Z', maxResets: 1, resetCount: 1, lastResetAt: '2026-09-18T09:00:00.000Z' }
-  ],
-  'app_val_internal_02': [
-    { id: 'lic_04', licenseKey: 'KANISHK-VAL-5511-LIFETIME', hwid: 'HWID-9999-8888-7777', hwidLock: true, expiresAt: '2030-01-01T00:00:00.000Z', status: 'active', createdAt: '2026-09-01T12:00:00.000Z', maxResets: 5, resetCount: 0, lastResetAt: null }
-  ],
-  'app_cs2_hvh_03': [
-    { id: 'lic_05', licenseKey: 'KANISHK-CS2-3311-MONTHLY', hwid: 'HWID-4444-5555-6666', hwidLock: true, expiresAt: '2026-10-15T00:00:00.000Z', status: 'active', createdAt: '2026-09-15T14:00:00.000Z', maxResets: 3, resetCount: 1, lastResetAt: '2026-09-20T11:00:00.000Z' }
-  ]
-};
+const DEFAULT_STATIC_LICENSES: Record<string, License[]> = {};
 
-  // Load applications directly from Firestore with Static Fallbacks
+  // Load applications directly from Firestore + Backend API + LocalStorage Persistent Cache
   const fetchApps = async () => {
     try {
-      const q = query(collection(db, 'applications'), where('ownerid', '==', token));
-      const querySnapshot = await getDocs(q);
       const appsList: Application[] = [];
-      querySnapshot.forEach((docSnap) => {
-        appsList.push({ id: docSnap.id, ...docSnap.data() } as Application);
-      });
-      if (appsList.length > 0) {
-        setApps(appsList);
-        if (!selectedAppId) setSelectedAppId(appsList[0].id);
+      const seenIds = new Set<string>();
+
+      // 1. Fetch from Firestore
+      try {
+        const q = query(collection(db, 'applications'));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const appObj: Application = { id: docSnap.id, ...data } as Application;
+          if (!seenIds.has(appObj.id)) {
+            seenIds.add(appObj.id);
+            appsList.push(appObj);
+          }
+        });
+      } catch (e) {
+        console.warn('[Firestore] fetchApps warning:', e);
+      }
+
+      // 2. Fetch from Backend API
+      try {
+        const res = await fetch('/api/dashboard/apps', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.applications)) {
+            data.applications.forEach((a: any) => {
+              if (!seenIds.has(a.id)) {
+                seenIds.add(a.id);
+                appsList.push(a);
+              }
+            });
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fetch from LocalStorage persistent cache
+      try {
+        const localKey = `kc_user_apps_${token}`;
+        const localSaved = localStorage.getItem(localKey);
+        if (localSaved) {
+          const parsed: Application[] = JSON.parse(localSaved);
+          parsed.forEach(a => {
+            if (!seenIds.has(a.id)) {
+              seenIds.add(a.id);
+              appsList.push(a);
+            }
+          });
+        }
+      } catch (e) {}
+
+      // Filter apps for current user token or demo apps
+      const userApps = appsList.filter(a => a.ownerid === token || (a as any).ownerId === token || a.ownerid === 'usr_seed' || userRole === 'owner');
+
+      if (userApps.length > 0) {
+        setApps(userApps);
+        if (!selectedAppId) setSelectedAppId(userApps[0].id);
       } else {
         setApps(DEFAULT_STATIC_APPS);
         if (!selectedAppId) setSelectedAppId(DEFAULT_STATIC_APPS[0].id);
