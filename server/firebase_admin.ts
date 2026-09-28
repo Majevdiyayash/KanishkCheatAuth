@@ -207,6 +207,14 @@ export interface CloudFile {
 // ASYNC FIRESTORE + LOCAL JSON DATABASE HELPER
 // ============================================================================
 
+// Timeout helper to prevent Firestore calls from hanging Node API requests
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 1500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('FIRESTORE_TIMEOUT')), timeoutMs))
+  ]);
+}
+
 export class FirestoreDB {
   public async find<T extends { id?: string; email?: string }>(
     collectionName: string, 
@@ -228,7 +236,7 @@ export class FirestoreDB {
       if (limitCount) {
         q = query(q, firestoreLimit(limitCount));
       }
-      const snapshot = await getDocs(q);
+      const snapshot = await withTimeout(getDocs(q), 1500);
       snapshot.forEach(docSnap => {
         firestoreList.push({ id: docSnap.id, ...docSnap.data() } as T);
       });
@@ -279,7 +287,7 @@ export class FirestoreDB {
   public async getById<T extends { id?: string }>(collectionName: string, id: string): Promise<T | null> {
     try {
       const docRef = doc(adminDb, collectionName, id);
-      const docSnap = await getDoc(docRef);
+      const docSnap = await withTimeout(getDoc(docRef), 1500);
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() } as T;
       }
@@ -294,11 +302,11 @@ export class FirestoreDB {
     const id = item.id || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const fullItem = { ...item, id } as T;
 
-    // Save to Firestore (best-effort)
+    // Save to Firestore (best-effort with timeout)
     try {
       const docRef = doc(adminDb, collectionName, id);
       const dataToSave = { ...fullItem };
-      await setDoc(docRef, dataToSave);
+      await withTimeout(setDoc(docRef, dataToSave), 1500);
     } catch (fsErr) {
       console.warn(`[Firestore DB Warning] setDoc permission bypassed for ${collectionName}:`, fsErr);
     }
@@ -317,10 +325,10 @@ export class FirestoreDB {
   }
 
   public async update<T extends { id?: string }>(collectionName: string, id: string, updates: Partial<T>): Promise<T | null> {
-    // Try Firestore update
+    // Try Firestore update with timeout
     try {
       const docRef = doc(adminDb, collectionName, id);
-      await updateDoc(docRef, updates as any);
+      await withTimeout(updateDoc(docRef, updates as any), 1500);
     } catch (fsErr) {
       console.warn(`[Firestore DB Warning] updateDoc permission bypassed for ${collectionName}/${id}:`, fsErr);
     }
@@ -344,7 +352,7 @@ export class FirestoreDB {
   public async delete(collectionName: string, id: string): Promise<boolean> {
     try {
       const docRef = doc(adminDb, collectionName, id);
-      await deleteDoc(docRef);
+      await withTimeout(deleteDoc(docRef), 1500);
     } catch { }
 
     const localList = readLocalCollection<{ id?: string }>(collectionName);
