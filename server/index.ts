@@ -256,26 +256,39 @@ app.post('/api/auth/register', async (req, res) => {
   res.status(201).json({ success: true, token, user: { id: newUser.id, email: newUser.email } });
 });
 
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    res.status(400).json({ success: false, message: 'Email and password are required' });
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  const { email, username, user: userParam, password, pass, appid } = req.body;
+  const targetEmail = (email || username || userParam || '').toString().trim();
+  const targetPass = (password || pass || '').toString().trim();
+
+  if (!targetEmail || !targetPass) {
+    res.status(400).json({ success: false, message: 'Email/Username and password are required' });
     return;
   }
 
-  const user = await db.findOne<User>('users', [{ field: 'email', op: '==', value: email.toLowerCase() }]);
-  if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
-    res.status(401).json({ success: false, message: 'Invalid credentials' });
-    return;
+  // If appid is provided or target doesn't look like email, attempt App User login first
+  if (appid || !targetEmail.includes('@')) {
+    return handleUnifiedClientLogin(req, res);
   }
 
-  if (user.banned) {
-    res.status(403).json({ success: false, message: `Account banned: ${user.bannedReason || 'Violation of terms'}` });
-    return;
+  // Check Web Dashboard Admin User
+  const webUser = await db.findOne<User>('users', [{ field: 'email', op: '==', value: targetEmail.toLowerCase() }]);
+  if (webUser && webUser.passwordHash) {
+    try {
+      if (bcrypt.compareSync(targetPass, webUser.passwordHash)) {
+        if (webUser.banned) {
+          res.status(403).json({ success: false, message: `Account banned: ${webUser.bannedReason || 'Violation of terms'}` });
+          return;
+        }
+        const token = jwt.sign({ userId: webUser.id, email: webUser.email }, JWT_SECRET, { expiresIn: '7d' });
+        res.status(200).json({ success: true, token, user: { id: webUser.id, email: webUser.email } });
+        return;
+      }
+    } catch (e) {}
   }
 
-  const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-  res.status(200).json({ success: true, token, user: { id: user.id, email: user.email } });
+  // Fallback to App User client login
+  return handleUnifiedClientLogin(req, res);
 });
 
 app.post('/api/auth/discord', async (req, res) => {
@@ -902,10 +915,20 @@ app.post('/api/init', async (req, res) => {
     return;
   }
 
-  const app = await db.findOne<Application>('applications', [
+  let app = await db.findOne<Application>('applications', [
     { field: 'appid', op: '==', value: appid },
     { field: 'secret', op: '==', value: secret }
   ]);
+  if (!app) {
+    app = await db.findOne<Application>('applications', [
+      { field: 'appName', op: '==', value: appid },
+      { field: 'secret', op: '==', value: secret }
+    ]);
+  }
+  if (!app) {
+    const allApps = await db.find<Application>('applications', []);
+    app = allApps.find(a => (a.appid === appid || a.appName === appid || a.id === appid) && a.secret === secret) || null;
+  }
   if (!app) {
     await logApiCall(null, null, '/api/init', 403, req, `Initialization failed: invalid credentials for AppID ${appid}`);
     res.status(403).json({ success: false, message: 'Invalid credentials provided' });
@@ -1226,25 +1249,27 @@ app.post('/api/client/register', async (req, res) => {
 });
 
 const handleUnifiedClientLogin = async (req: Request, res: Response) => {
-  const { username, password, hwid } = req.body;
+  const { username, email, user: userParam, password, pass, hwid } = req.body;
   const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
 
-  if (!username || !password) {
+  const rawUser = (username || email || userParam || '').toString().trim();
+  const rawPass = (password || pass || '').toString().trim();
+
+  if (!rawUser || !rawPass) {
     res.status(400).json({ success: false, message: 'Username and password are required.' });
     return;
   }
 
-  const cleanUser = username.trim();
-
-  let user: any = await db.findOne<any>('app_users', [{ field: 'username', op: '==', value: cleanUser }]);
+  let user: any = await db.findOne<any>('app_users', [{ field: 'username', op: '==', value: rawUser }]);
   if (!user) {
-    user = await db.findOne<any>('app_users', [{ field: 'email', op: '==', value: cleanUser }]);
+    user = await db.findOne<any>('app_users', [{ field: 'email', op: '==', value: rawUser }]);
   }
   if (!user) {
     const allUsers = await db.find<any>('app_users', []);
     user = allUsers.find(u => 
-      u.username?.toLowerCase() === cleanUser.toLowerCase() || 
-      u.email?.toLowerCase() === cleanUser.toLowerCase()
+      (u.username && u.username.toString().toLowerCase() === rawUser.toLowerCase()) || 
+      (u.email && u.email.toString().toLowerCase() === rawUser.toLowerCase()) ||
+      u.id === rawUser
     ) || null;
   }
 
@@ -1254,13 +1279,13 @@ const handleUnifiedClientLogin = async (req: Request, res: Response) => {
   }
 
   let isPasswordValid = false;
-  if (user.password && user.password === password) {
+  if (user.password && user.password === rawPass) {
     isPasswordValid = true;
   } else if (user.passwordHash) {
     try {
-      isPasswordValid = bcrypt.compareSync(password, user.passwordHash) || user.passwordHash === password;
+      isPasswordValid = bcrypt.compareSync(rawPass, user.passwordHash) || user.passwordHash === rawPass;
     } catch {
-      isPasswordValid = user.passwordHash === password;
+      isPasswordValid = user.passwordHash === rawPass;
     }
   }
 
@@ -1291,16 +1316,20 @@ const handleUnifiedClientLogin = async (req: Request, res: Response) => {
     }
   }
 
+  const userDataObj = {
+    username: user.username,
+    email: user.email || '',
+    subscription: user.subscription || 'VIP Access',
+    expires: user.expiration ? new Date(user.expiration).toISOString().split('T')[0] : 'Lifetime Access',
+    hwid: user.hwid || clientHwid,
+    ip
+  };
+
   res.status(200).json({
     success: true,
     message: `Welcome back, ${user.username}!`,
-    user_data: {
-      username: user.username,
-      email: user.email || '',
-      subscription: user.subscription || 'VIP Access',
-      expires: user.expiration ? new Date(user.expiration).toISOString().split('T')[0] : 'Lifetime Access',
-      hwid: user.hwid || clientHwid
-    }
+    user: userDataObj,
+    user_data: userDataObj
   });
 };
 
