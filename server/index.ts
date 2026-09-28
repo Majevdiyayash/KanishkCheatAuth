@@ -406,6 +406,18 @@ app.post('/api/dashboard/apps', authenticateDashboard as any, async (req: AuthRe
   res.status(201).json({ success: true, application: newApp });
 });
 
+app.delete('/api/dashboard/apps/:id', authenticateDashboard as any, async (req: AuthRequest, res) => {
+  const appId = req.params.id;
+  await db.delete('applications', appId);
+  await db.deleteMany('licenses', [{ field: 'appId', op: '==', value: appId }]);
+  await db.deleteMany('app_users', [{ field: 'appId', op: '==', value: appId }]);
+  await db.deleteMany('webhooks', [{ field: 'appId', op: '==', value: appId }]);
+  await db.deleteMany('cloud_vars', [{ field: 'appId', op: '==', value: appId }]);
+  await db.deleteMany('cloud_files', [{ field: 'appId', op: '==', value: appId }]);
+  await db.deleteMany('blacklists', [{ field: 'appId', op: '==', value: appId }]);
+  res.json({ success: true, message: 'Application deleted successfully' });
+});
+
 app.get('/api/dashboard/keys', authenticateDashboard as any, async (req: AuthRequest, res) => {
   const { appId } = req.query;
   if (!appId) {

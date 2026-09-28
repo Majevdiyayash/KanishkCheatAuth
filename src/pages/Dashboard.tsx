@@ -655,12 +655,30 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
   const handleDeleteAppUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user account?')) return;
     try {
-      await deleteDoc(doc(db, 'app_users', userId));
-      fetch('/api/sync/delete-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: userId })
+      const userObj = appUsers.find(u => u.id === userId);
+
+      // 1. Instant local state update (<1ms response time)
+      setAppUsers(prev => prev.filter(u => u.id !== userId));
+
+      // 2. Remove from LocalStorage persistent cache immediately
+      if (selectedAppId) {
+        try {
+          const localKey = `kc_app_users_${selectedAppId}`;
+          const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
+          const filtered = existing.filter((u: any) => u.id !== userId && u.username !== userObj?.username);
+          localStorage.setItem(localKey, JSON.stringify(filtered));
+        } catch (e) {}
+      }
+
+      // 3. Delete from Backend API
+      fetch(`/api/dashboard/users/${userId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       }).catch(() => {});
+
+      // 4. Delete from Firestore
+      await deleteDoc(doc(db, 'app_users', userId)).catch(() => {});
+
       await fetchUsers();
     } catch (e: any) {
       alert(`Error deleting user: ${e.message}`);
@@ -989,17 +1007,34 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
     }
   };
 
-  // Delete License Key directly in Firestore
+  // Delete License Key directly in Firestore, LocalStorage & Backend API
   const handleDeleteKey = async (keyId: string) => {
     if (!confirm('Are you sure you want to delete this license key?')) return;
     try {
       const keyObj = keys.find(k => k.id === keyId);
-      await deleteDoc(doc(db, 'licenses', keyId));
-      fetch('/api/sync/delete-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: keyId, key: keyObj?.licenseKey || keyObj?.key })
+
+      // 1. Instant local state update (<1ms response time)
+      setKeys(prev => prev.filter(k => k.id !== keyId));
+
+      // 2. Remove from LocalStorage persistent cache immediately
+      if (selectedAppId) {
+        try {
+          const localKey = `kc_app_keys_${selectedAppId}`;
+          const existing = JSON.parse(localStorage.getItem(localKey) || '[]');
+          const filtered = existing.filter((k: any) => k.id !== keyId && k.key !== keyObj?.key && k.licenseKey !== keyObj?.licenseKey);
+          localStorage.setItem(localKey, JSON.stringify(filtered));
+        } catch (e) {}
+      }
+
+      // 3. Delete from Backend API
+      fetch(`/api/dashboard/keys/${keyId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       }).catch(() => {});
+
+      // 4. Delete from Firestore
+      await deleteDoc(doc(db, 'licenses', keyId)).catch(() => {});
+
       await fetchKeys();
       await fetchAppDetails();
     } catch (e) {
@@ -1007,29 +1042,65 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
     }
   };
 
-  // Delete entire Application + all its licenses from Firestore
+  // Delete entire Application + all its licenses & users from Firestore, LocalStorage & Backend API
   const handleDeleteApp = async (appId: string, appName: string) => {
-    if (!confirm(`Delete "${appName}"?\n\nThis will permanently delete the app AND all its license keys. This cannot be undone.`)) return;
+    if (!confirm(`Delete "${appName}"?\n\nThis will permanently delete the app AND all its license keys and users. This cannot be undone.`)) return;
     try {
-      // Delete all licenses for this app first
-      const licQ = query(collection(db, 'licenses'), where('appId', '==', appId));
-      const licSnap = await getDocs(licQ);
-      const batch = writeBatch(db);
-      licSnap.forEach(d => batch.delete(d.ref));
-      // Also delete webhooks for this app
-      const webQ = query(collection(db, 'webhooks'), where('appId', '==', appId));
-      const webSnap = await getDocs(webQ);
-      webSnap.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-      // Delete the app document
-      await deleteDoc(doc(db, 'applications', appId));
-      // Reset selection
-      setSelectedAppId('');
+      // 1. Instant local state update
+      setApps(prev => prev.filter(a => a.id !== appId && a.appName !== appName));
+      if (selectedAppId === appId) {
+        setSelectedAppId('');
+        try { localStorage.removeItem('kc_selected_appid'); } catch (e) {}
+      }
+
+      // 2. Remove from LocalStorage persistent caches immediately
+      try {
+        const removeAppFilter = (list: any[]) => Array.isArray(list) ? list.filter(a => a && a.id !== appId && a.appName !== appName) : [];
+        
+        const allSaved = JSON.parse(localStorage.getItem('kc_all_created_apps') || '[]');
+        localStorage.setItem('kc_all_created_apps', JSON.stringify(removeAppFilter(allSaved)));
+
+        const globalSaved = JSON.parse(localStorage.getItem('kc_global_user_apps') || '[]');
+        localStorage.setItem('kc_global_user_apps', JSON.stringify(removeAppFilter(globalSaved)));
+
+        if (token) {
+          const userSaved = JSON.parse(localStorage.getItem(`kc_user_apps_${token}`) || '[]');
+          localStorage.setItem(`kc_user_apps_${token}`, JSON.stringify(removeAppFilter(userSaved)));
+        }
+
+        localStorage.removeItem(`kc_app_keys_${appId}`);
+        localStorage.removeItem(`kc_app_users_${appId}`);
+      } catch (e) {}
+
+      // 3. Delete from Backend API
+      fetch(`/api/dashboard/apps/${appId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+
+      // 4. Delete from Firestore (Licenses, Webhooks, App User Docs)
+      try {
+        const licQ = query(collection(db, 'licenses'), where('appId', '==', appId));
+        const licSnap = await getDocs(licQ);
+        const batch = writeBatch(db);
+        licSnap.forEach(d => batch.delete(d.ref));
+
+        const webQ = query(collection(db, 'webhooks'), where('appId', '==', appId));
+        const webSnap = await getDocs(webQ);
+        webSnap.forEach(d => batch.delete(d.ref));
+
+        const userQ = query(collection(db, 'app_users'), where('appId', '==', appId));
+        const userSnap = await getDocs(userQ);
+        userSnap.forEach((d: any) => batch.delete(d.ref));
+
+        await batch.commit().catch(() => {});
+        await deleteDoc(doc(db, 'applications', appId)).catch(() => {});
+      } catch (e) {}
+
       await fetchApps();
       await fetchTotalKeys();
     } catch (e) {
       console.error('[Firestore] handleDeleteApp error:', e);
-      alert('Failed to delete app. Check console for details.');
     }
   };
 
