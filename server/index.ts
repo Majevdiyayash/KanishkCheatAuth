@@ -384,20 +384,34 @@ app.get('/api/dashboard/apps', authenticateDashboard as any, async (req: AuthReq
 });
 
 app.post('/api/dashboard/apps', authenticateDashboard as any, async (req: AuthRequest, res) => {
-  const { appName, version } = req.body;
+  const { id, appName, version, secret, appid, ownerid } = req.body;
   if (!appName) {
     res.status(400).json({ success: false, message: 'App Name is required' });
     return;
   }
 
-  const ownerId = req.userId!;
+  const ownerId = req.userId || ownerid || 'OWNER_DEFAULT';
+  const targetId = id || `app_${crypto.randomUUID().substring(0, 8)}`;
+  const targetSecret = secret || crypto.randomBytes(16).toString('hex');
+  const targetAppId = appid || `APP_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+
+  // Check if app already exists in server db by ID or AppID
+  let existingApp = await db.getById<Application>('applications', targetId);
+  if (!existingApp) {
+    existingApp = await db.findOne<Application>('applications', [{ field: 'appid', op: '==', value: targetAppId }]);
+  }
+  if (existingApp) {
+    res.status(200).json({ success: true, application: existingApp });
+    return;
+  }
+
   const newApp: Application = {
-    id: `app_${crypto.randomUUID().substring(0, 8)}`,
+    id: targetId,
     ownerId,
     appName: appName.trim(),
     ownerid: ownerId,
-    secret: crypto.randomBytes(16).toString('hex'),
-    appid: `APP_${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+    secret: targetSecret,
+    appid: targetAppId,
     version: version || '1.0',
     createdAt: new Date().toISOString()
   };

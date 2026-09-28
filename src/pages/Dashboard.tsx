@@ -245,7 +245,11 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
 
     const addApp = (a: Application) => {
       if (!a || !a.id || seenIds.has(a.id)) return;
+      if (a.secret && seenIds.has(a.secret)) return;
+      if (a.appid && seenIds.has(a.appid)) return;
       seenIds.add(a.id);
+      if (a.secret) seenIds.add(a.secret);
+      if (a.appid) seenIds.add(a.appid);
       appsList.push(a);
     };
 
@@ -866,7 +870,7 @@ export const Dashboard: React.FC<DashboardProps & { userRole?: string; onUpgrade
       fetch('/api/dashboard/apps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ appName: newAppName.trim(), version: newAppVersion.trim() })
+        body: JSON.stringify(newApp)
       }).catch(() => {});
 
       setNewAppName('');
